@@ -149,15 +149,23 @@ function dustTrigger(pos,m,next){
  if(!isKira(pos,side)||pos.stand.dust[side])return '';
  return captureSquares(pos,m).some(i=>pos.b[i]===(pos.w?'q':'Q'))?'Queen captured':'';
 }
-function rewindTarget(pos,history){
- // Undo the triggering turn and the previous turn, including their free actions.
+function rewindTarget(pos,history,recorded=[]){
+ // Rewind two moves per player, including the capture that triggered BTD.
+ // Free powers are rolled back too, but do not consume the move quota.
  let start=history.length;
- while(start>0&&history[start-1].w===pos.w)start--;
- while(start>0&&history[start-1].w!==pos.w)start--;
+ const taken=[0,0];taken[+!pos.w]=1;
+ const hasRecords=recorded.length===history.length;
+ const isMove=i=>{const m=recorded[i];return !hasRecords||!!(m&&(!freeAction(m)||m.swap||history[i].w!==(history[i+1]||pos).w))};
+ while(start>0&&(taken[0]<2||taken[1]<2)){
+  const i=--start;
+  if(isMove(i))taken[+!history[i].w]++;
+ }
+ // Also undo free powers that prepared the earliest undone move.
+ while(start>0&&!isMove(start-1)&&history[start-1].w===history[start].w)start--;
  return {position:history[start]||pos,remove:history.length-start};
 }
-function completeDustRewind(before,m,next,history){
- const side=+before.w,target=rewindTarget(before,history);
+function completeDustRewind(before,m,next,history,recorded=[]){
+ const side=+before.w,target=rewindTarget(before,history,recorded);
  // The turn in the restored position may belong to either player; the defender owns BTD.
  const position=rewound(target.position,side,freeAction(m)?next:before);
  if(m.epitaph){const vision=position.stand.vision.slice();vision[1-side]=4;position.stand.vision=vision}
@@ -975,7 +983,10 @@ const kiraClips=['data:audio/mpeg;base64,SUQzBAAAAAAANFRDT04AAAAHAAADQmx1ZXMAVFN
 let forcedMove=null;
 let choosingPawn=false,bombSquare=null,pendingVerdict=null,netIndex=0,dustNotice='',retryBot=false,fxActive=false,fxLabel='',syncing=false;
 function sideStands(){return [$('wStand').value,$('bStand').value].map(v=>['kira','d4c','cmoon','hand','echoes','star','requiem','diamond','sticky'].includes(v)?v:'crimson')}
-function kiraVoice(n){if(typeof Audio==='undefined')return;try{if(!kiraVoice.players)kiraVoice.players=kiraClips.map(src=>new Audio(src));for(const a of kiraVoice.players){a.pause();a.currentTime=0}kiraVoice.players[n].play().catch(()=>{})}catch{}}
+function kiraVoice(n){if(typeof Audio==='undefined')return;try{const players=kiraPlayers();for(const a of players){a.pause();a.currentTime=0}players[n].play().catch(error=>console.warn('Killer Queen audio:',error))}catch{}}
+function kiraPlayers(){return kiraVoice.players||(kiraVoice.players=kiraClips.map(src=>{const a=new Audio(src);a.preload='auto';return a}))}
+// Prepare the original audio during a real interaction before a remote move can trigger it.
+document.addEventListener('pointerdown',()=>{try{kiraPlayers()}catch{}},{once:true});
 const fxWait=ms=>new Promise(resolve=>setTimeout(resolve,matchMedia('(prefers-reduced-motion: reduce)').matches?Math.min(ms,100):ms));
 const boardTile=i=>$('board').children[flipped?63-i:i];
 function victimGhost(pos,i){const tile=boardTile(i);if(!tile)return;const p=pos.b[i],ghost=document.createElement('span');ghost.className='piece captureGhost '+(white(p)?'white':'');ghost.textContent=glyph(p)+'︎';tile.prepend(ghost);tile.style.zIndex=2;return ghost}
@@ -984,7 +995,7 @@ function fxBanner(text){fxLabel=text;seats();$('board').querySelector('.queenFxB
 // Rewind actual recorded moves, rather than matching identical pieces by type.
 function dustFrame(pos){draw(null,pos);$('board').classList.add('dustRewind');fxBanner('BITES THE DUST')}
 function dustMotion(piece,frames,duration,delay=0){if(!piece||matchMedia('(prefers-reduced-motion: reduce)').matches)return;piece.animate(frames,{duration,delay,easing:'ease-in-out',fill:'both'})}
-function rawAfterMove(pos,m){if(m.zip)return apply(pos,m);if(m.stop)return pos;if(m.finger)return {...fingerRaw(pos,m),stand:pos.stand};if(m.echo)return echoPosition(pos,m);if(m.hand)return handPosition(pos,m);const wall=barrier(pos,m);if(wall)return deflect(pos,m,wall);return m.via===undefined?plainMove(pos,m):plainMove(midpoint(pos,m.a,m.via),{a:m.via,z:m.z,p:''})}
+function rawAfterMove(pos,m){if(m.zip||m.cd||m.swap)return apply(pos,m);if(m.stop)return pos;if(m.finger)return {...fingerRaw(pos,m),stand:pos.stand};if(m.echo)return echoPosition(pos,m);if(m.hand)return handPosition(pos,m);const wall=barrier(pos,m);if(wall)return deflect(pos,m,wall);return m.via===undefined?plainMove(pos,m):plainMove(midpoint(pos,m.a,m.via),{a:m.via,z:m.z,p:''})}
 async function recoverForRewind(pos,missing,token){
  dustFrame(pos);
  for(const i of missing){const tile=boardTile(i);if(!tile)continue;tile.style.zIndex=5;dustMotion(tile.querySelector('.piece'),[{opacity:0,transform:'scale(.25)',filter:'brightness(3) blur(3px)'},{opacity:1,transform:'scale(1)',filter:'none'}],520)}
@@ -1003,25 +1014,30 @@ async function reverseLeg(pos,after,m,token){
  for(let i=0;i<64;i++)if(!arrivals.has(i)&&pos.b[i]!=='.'&&pos.b[i]!==after.b[i]){const tile=boardTile(i),piece=tile?.querySelector('.piece');if(tile)tile.style.zIndex=2;dustMotion(piece,[{opacity:0,transform:'scale(.65)'},{opacity:1,transform:'scale(1)'}],440,320)}
  await fxWait(duration+90);return token===epoch
 }
-async function reverseRecordedMove(pos,m,after,token){if(m.echo||m.stop)return recoverForRewind(pos,[],token);if(m.finger)return recoverForRewind(pos,[m.z],token);const hit=echoImpact(pos,m);if(hit){const next=apply(pos,m),event=next.echoEvent;if(event?.stop>=0&&event.stop!==event.cell){if(!await reverseLeg(rawAfterMove(pos,event.move),next,{a:event.cell,z:event.stop,p:'',travel:true},token))return false;}return reverseRecordedMove(pos,{...event.move,echoReplay:true},rawAfterMove(pos,event.move),token);}if(m.hand==='delete')return recoverForRewind(pos,[m.a],token);
+async function reverseRecordedMove(pos,m,after,token){if(m.zip){
+  // Only the owner sees the underground movement. Public emergence/entry is not secret.
+  const old=zipState(pos),side=+!pos.w,ph=old.phase[side];
+  if(m.zip==='step'&&ph&&scrViewer()===side){dustFrame(pos);const ghost=boardTile(ph.at)?.querySelector('.zipGhost');const sign=flipped?-100:100;dustMotion(ghost,[{transform:'translate('+((m.z%8-ph.at%8)*sign)+'%,'+(((m.z>>3)-(ph.at>>3))*sign)+'%)'},{transform:'translate(0,0)'}],850);await fxWait(940);return token===epoch;}
+  return recoverForRewind(pos,pos.b.flatMap((p,i)=>p!=='.'&&p!==after.b[i]?[i]:[]),token);
+ }if(m.cd==='restore'||m.swap)return recoverForRewind(pos,[],token);if(m.cd==='reconstruct')return reverseLeg(pos,after,{...m,travel:true},token);if(m.echo||m.stop)return recoverForRewind(pos,[],token);if(m.finger)return recoverForRewind(pos,[m.z],token);const hit=echoImpact(pos,m);if(hit){const next=apply(pos,m),event=next.echoEvent;if(event?.stop>=0&&event.stop!==event.cell){if(!await reverseLeg(rawAfterMove(pos,event.move),next,{a:event.cell,z:event.stop,p:'',travel:true},token))return false;}return reverseRecordedMove(pos,{...event.move,echoReplay:true},rawAfterMove(pos,event.move),token);}if(m.hand==='delete')return recoverForRewind(pos,[m.a],token);
  const wall=barrier(pos,m);if(wall)return reverseLeg(pos,after,{a:m.a,z:wall.stop,p:'',travel:true},token);if(m.via===undefined)return reverseLeg(pos,after,m,token);
  const mid=midpoint(pos,m.a,m.via);
  if(!await reverseLeg({...mid,stand:pos.stand},after,{a:m.via,z:m.z,p:''},token))return false;
  return reverseLeg(pos,mid,{a:m.a,z:m.via,p:''},token)
 }
 async function animateDust(before,m,raw,token){
- const target=rewindTarget(before,entries.map(e=>e.before)),prior=entries.slice(entries.length-target.remove).reverse();
+ const target=rewindTarget(before,entries.map(e=>e.before),entries.map(e=>e.m)),prior=entries.slice(entries.length-target.remove).reverse();
  if(!await recoverForRewind(raw,[m.z],token))return false;
  if(!await reverseRecordedMove(before,m,raw,token))return false;
- for(const previous of prior){const prevRaw={...rawAfterMove(previous.before,previous.m),stand:before.stand};const missing=prevRaw.b.flatMap((p,i)=>p!=='.'&&before.b[i]==='.'?[i]:[]);
+ for(const previous of prior){const prevRaw=rawAfterMove(previous.before,previous.m);const missing=prevRaw.b.flatMap((p,i)=>p!=='.'&&before.b[i]==='.'?[i]:[]);
   if(missing.length&&!await recoverForRewind(prevRaw,missing,token))return false;
   if(!await reverseRecordedMove(previous.before,previous.m,prevRaw,token))return false;
  }
  await fxWait(220);return token===epoch
 }
 async function animateQueen(before,m,next,reason,mine,firstSeen,token){
- const special=m.via!==undefined,raw=m.finger?fingerRaw(before,m):m.hand?handPosition(before,m):special?plainMove(midpoint(before,m.a,m.via),{a:m.via,z:m.z,p:''}):plainMove(before,m);
- const visual={...raw,stand:next.stand};fxLabel=reason?tr(reason):tr('First Bomb');draw(m.hand||m.finger?null:special?{...m,firstSeen}:m,visual);
+ const special=m.via!==undefined,raw=m.zip?apply(before,m):m.finger?fingerRaw(before,m):m.hand?handPosition(before,m):special?plainMove(midpoint(before,m.a,m.via),{a:m.via,z:m.z,p:''}):plainMove(before,m);
+ const visual={...raw,stand:next.stand};fxLabel=reason?tr(reason):tr('First Bomb');draw(m.zip||m.hand||m.finger?null:special?{...m,firstSeen}:m,visual);
  const ghosts=captureSquares(before,m).map(i=>victimGhost(before,i)).filter(Boolean);
  await fxWait(special&&!firstSeen?650:340);if(token!==epoch)return false;ghosts.forEach(g=>g.remove());
  if(reason&&check({...next,w:!before.w})){boardTile(next.b.indexOf(before.w?'k':'K'))?.classList.add('check');fxBanner(tr(reason));await fxWait(350);if(token!==epoch)return false}
@@ -1450,7 +1466,7 @@ function draw(motion=null,display=s){const board=$('board');board.classList.togg
  if(passenger&&+!white(passenger)===viewer){const tag=document.createElement('span');tag.className='zipPocket';tag.textContent='↗ '+glyph(passenger);b.append(tag)}
  if(display===s&&zipMode&&legal.some(m=>m.zip===zipMode&&(zipFrom===null?m.a===i:m.a===zipFrom&&m.z===i)))b.classList.add('zipChoice');
  b.onclick=()=>pick(i);board.append(b);
- if(motion?.via!==undefined&&motion.z===i){stepAnimation(b,motion.firstSeen?motion.via:motion.a,i,motion.firstSeen?undefined:motion.via)}else if(motion&&motion.z===i&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const direction=flipped?-1:1,dx=(motion.a%8-i%8)*direction*100,dy=((motion.a>>3)-(i>>3))*direction*100;b.style.zIndex=3;b.querySelector('.piece')?.animate([{transform:'translate('+dx+'%,'+dy+'%)'},{transform:'translate(0,0)'}],{duration:230,easing:'cubic-bezier(.2,.75,.25,1)'})}
+ if(motion?.via!==undefined&&motion.z===i){stepAnimation(b,motion.firstSeen?motion.via:motion.a,i,motion.firstSeen?undefined:motion.via)}else if(motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){const from=motion.z===i?motion.a:motion.rookTo===i?motion.rookFrom:null;if(from!==null){const direction=flipped?-1:1,dx=(from%8-i%8)*direction*100,dy=((from>>3)-(i>>3))*direction*100;b.style.zIndex=3;b.querySelector('.piece:not(.zipGhost)')?.animate([{transform:'translate('+dx+'%,'+dy+'%)'},{transform:'translate(0,0)'}],{duration:230,easing:'cubic-bezier(.2,.75,.25,1)'})}}
  }paintBoardGrade();seats()}
 function log(){const last=entries.at(-1),r=last?.review;$('grade').textContent=last?last.san+' · '+(last.m.cd||last.m.swap||last.m.echo||last.m.stop||last.before.stand?.stopped===+!last.before.w?'Ability':tr(r?.grade||'Analyzing…')):tr('Starting position');$('detail').textContent=r?tr('Best move')+' · '+r.best+' · '+tr('Evaluation loss (pawns)')+' '+(Math.min(r.loss,999)/100).toFixed(2)+(r.loss>999?'+':''):tr(last?'Comparing legal continuations…':'Play a move to see its evaluation.');
  if(last?.secret){$('grade').textContent='?';$('detail').textContent=''}else if(r)$('grade').innerHTML=last.san+' · '+badge(r.grade,true);paintBoardGrade();
@@ -1489,17 +1505,17 @@ async function play(m,review=null,replay=false){
  if(m.mark!==undefined&&m.mark!==moonPlan.mark)moonVoice(8);if(m.shift&&m.shift!==moonPlan.shift)moonVoice(Math.floor(Math.random()*8));moonPlan={};moonChoice='';
  if(m.arm!==undefined&&bombSquare!==m.arm)kiraVoice(0);
  bombSquare=null;choosingPawn=false;dustNotice='';
- const before=s, special=m.via!==undefined,firstSeen=eraseStage===2&&viaSquare===m.via;stopPreview();vision=false;eraseStage=0;viaSquare=null;clearHint();
+ const before=s, special=m.via!==undefined,firstSeen=eraseStage===2&&viaSquare===m.via;forcedMove=null;stopPreview();vision=false;eraseStage=0;viaSquare=null;clearHint();
  if(mode!=='net'){seats();if(ending)return;clocks=clockNow();stamp=Date.now()}
  const t=apply(before,m),reason=dustTrigger(before,m,t),mine=bombHit(before,m),token=epoch;
  selection=null;const wall=m.swap||t.echoEvent?null:barrier(before,m);if(!replay){
  const scenes=zipperScenes(before,m,t,scrViewer());if(scenes.length){fxActive=true;try{draw(null,before);for(const scene of scenes){if(epoch!==token)return;await animateZipper(scene,token)}}finally{if(epoch===token){fxActive=false;stamp=Date.now()}}if(epoch!==token)return}
  if(m.cd){cdVoice();fxActive=true;const ok=await animateDiamond(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.swap)scrVoice();if(m.stop||m.finger){fxActive=true;const ok=await animateStar(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.travel){const arrival=t.echoEvent?{...t,b:plainMove(before,m).b}:t;if(!await animateD4(before,m,arrival,null,token))return;stamp=Date.now()}if(m.echo||t.echoEvent){if(!await animateEcho(before,m,t,token))return;stamp=Date.now()}if(m.hand){if(!await animateHand(before,m,t,token))return;stamp=Date.now()}
  if(wall&&!m.travel&&!m.finger&&!m.stop){if(!await animateD4(before,m,t,wall,token))return;stamp=Date.now()}
- if((reason||mine!==null)&&!zipSecret(before,m)){fxActive=true;busy=true;let ok=false;try{ok=await animateQueen(before,t.echoEvent?.move||m,t,reason,mine,firstSeen,token)}catch(error){if(!reason){fxActive=false;busy=false;fxLabel='';throw error;}console.warn('Bites the Dust animation interrupted; applying rewind.',error);ok=token===epoch;}if(!ok||token!==epoch)return;fxActive=false;fxLabel='';busy=false;stamp=Date.now()}
+ if(reason||mine!==null&&!zipSecret(before,m)){fxActive=true;busy=true;let ok=false;try{ok=await animateQueen(before,t.echoEvent?.move||m,t,reason,mine,firstSeen,token)}catch(error){if(!reason){fxActive=false;busy=false;fxLabel='';throw error;}console.warn('Bites the Dust animation interrupted; recovering rewind.',error);if(token===epoch){if(fxLabel!=='BITES THE DUST'){kiraVoice(1);fxBanner('BITES THE DUST');$('board').classList.add('dustRewind');await fxWait(480)}const target=rewindTarget(before,entries.map(e=>e.before),entries.map(e=>e.m));await recoverForRewind(target.position,target.position.b.flatMap((p,i)=>p!=='.'&&t.b[i]!==p?[i]:[]),token)}ok=token===epoch;}if(!ok||token!==epoch)return;fxActive=false;fxLabel='';busy=false;stamp=Date.now()}
  }
  if(reason){
-  const target=completeDustRewind(before,m,t,entries.map(e=>e.before));entries.splice(entries.length-target.remove,target.remove);s=target.position;legal=actions(s);counts=rebuildCounts(entries.map(e=>e.before),s);ending='';resultShown=false;undoStack=undoStack.filter(e=>e.length<entries.length);lockedReply=null;clearTimeout(pendingBot);startEngine();entries.forEach((e,id)=>{if(!e.secret&&!e.review&&!e.m.swap&&!e.m.echo)worker.postMessage({s:e.before,m:e.m,id,d:3})});dustNotice='Bites the Dust · '+tr(reason)+' · '+tr('Time rewound')+' · '+tr(target.side?'Black':'White')+' · '+s.stand.dust[target.side];retryBot=botSide(s.w);draw();log();scheduleBot();seats();return
+  const target=completeDustRewind(before,m,t,entries.map(e=>e.before),entries.map(e=>e.m));entries.splice(entries.length-target.remove,target.remove);s=target.position;legal=actions(s);counts=rebuildCounts(entries.map(e=>e.before),s);ending='';resultShown=false;undoStack=undoStack.filter(e=>e.length<entries.length);lockedReply=null;clearTimeout(pendingBot);startEngine();entries.forEach((e,id)=>{if(!e.secret&&!e.review&&!e.m.swap&&!e.m.echo)worker.postMessage({s:e.before,m:e.m,id,d:3})});dustNotice='Bites the Dust · '+tr(reason)+' · '+tr('Time rewound')+' · '+tr(target.side?'Black':'White')+' · '+s.stand.dust[target.side];retryBot=botSide(s.w);draw();log();scheduleBot();seats();return
  }
  if(mode!=='net'){if(mode==='bot'&&before.w&&!before.stand?.handFree)undoStack.push({length:entries.length,position:before,clocks:clocks.slice()});if(t.w!==before.w)clocks[+!before.w]+=increment;stamp=Date.now()}
  const san=notation(before,m,legal,t),cap=captureSquares(before,m).map(i=>before.b[i]).join('')+(wall&&before.b.some((p,i)=>p===(before.w?'p':'P')&&t.b[i]==='.'&&!captureSquares(before,m).includes(i))?(before.w?'p':'P'):'');
@@ -1508,7 +1524,12 @@ async function play(m,review=null,replay=false){
  if(!firstSeen)eraseSound(0);
  landing=true;document.body.classList.toggle('landing',true);const token=epoch;
  clearTimeout(landingTimer);landingTimer=setTimeout(()=>{if(epoch!==token)return;landing=false;document.body.classList.toggle('landing',false);eraseSound(1);effects();seats()},matchMedia('(prefers-reduced-motion: reduce)').matches?0:firstSeen?320:640)
- }if(!replay&&before.stand?.stopped>=0&&t.stand?.stopped===-1)timeResumeEffect();scheduleBot();draw(m.zip||m.cd||freeAction(m)||m.finger||t.echoEvent||mine!==null||wall||m.travel?null:special?{...m,firstSeen}:m);log()
+ }if(!replay&&before.stand?.stopped>=0&&t.stand?.stopped===-1)timeResumeEffect();
+ const motion=replay||m.zip||m.cd||freeAction(m)||m.finger||t.echoEvent||mine!==null||wall||m.travel?null:{...m,firstSeen};
+ if(motion&&!special&&before.b[m.a]?.toLowerCase()==='k'&&Math.abs(m.z-m.a)===2){motion.rookFrom=m.z>m.a?m.a+3:m.a-4;motion.rookTo=(m.a+m.z)/2;}
+ // sync() must await the movement; a board rebuild would cancel the Web Animation.
+ if(motion){fxActive=true;draw(motion);await fxWait(special?(firstSeen?340:660):250);if(token!==epoch)return;fxActive=false;stamp=Date.now();}else draw();
+ log();scheduleBot();seats();
 }
 function animateBot(reply,wait){
  const generation=epoch;
@@ -1642,7 +1663,7 @@ function handle(action,d){let code=String(d.code||'').toUpperCase(),g=rooms.get(
   if(!g.live){
    g.whiteRole=crypto.randomInt(2);g.seed=crypto.randomBytes(4).readUInt32BE();
    const s=initial();if(g.bizzare)s.stand=standState([g.picks[g.whiteRole],g.picks[1-g.whiteRole]],g.seed);
-   Object.assign(g,{s,live:true,stamp:Date.now(),clocks:[g.sec*1000,g.sec*1000],list:[],history:[],counts:new Map([[key(s,moves(s)),1]]),ending:''});
+   Object.assign(g,{s,live:true,stamp:Date.now(),clocks:[g.sec*1000,g.sec*1000],list:[],history:[],historyMoves:[],counts:new Map([[key(s,moves(s)),1]]),ending:''});
   }
   return view(g,role);
  }
@@ -1665,7 +1686,7 @@ function handle(action,d){let code=String(d.code||'').toUpperCase(),g=rooms.get(
   if(g.forecast?.key!==forecastKey)fail('Preview this move first');
  }
  const newLock=m.epitaph?g.forecast.reply:null;
- const before=g.s,next=apply(before,m),reason=dustTrigger(before,m,next);g.clocks=times(g);g.stamp=Date.now();g.forecast=null;g.forced=reason?null:newLock;if(reason){const target=completeDustRewind(before,m,next,g.history);g.history.splice(g.history.length-target.remove,target.remove);g.s=target.position;g.counts=rebuildCounts(g.history,g.s);g.list.push(m);return view(g,role)}g.list.push(m);g.history.push(before);g.s=next;if(next.w===before.w)return view(g,role);g.clocks[+!before.w]+=g.inc*1000;const ms=moves(g.s),k=key(g.s,ms),n=(g.counts.get(k)||0)+1;g.counts.set(k,n);g.ending=outcome(g.s,ms,n);return view(g,role)}
+ const before=g.s,next=apply(before,m),reason=dustTrigger(before,m,next);g.clocks=times(g);g.stamp=Date.now();g.forecast=null;g.forced=reason?null:newLock;if(reason){const target=completeDustRewind(before,m,next,g.history,g.historyMoves);g.historyMoves.splice(g.history.length-target.remove,target.remove);g.history.splice(g.history.length-target.remove,target.remove);g.s=target.position;g.counts=rebuildCounts(g.history,g.s);g.list.push(m);return view(g,role)}g.list.push(m);g.history.push(before);g.historyMoves.push(m);g.s=next;if(next.w===before.w)return view(g,role);g.clocks[+!before.w]+=g.inc*1000;const ms=moves(g.s),k=key(g.s,ms),n=(g.counts.get(k)||0)+1;g.counts.set(k,n);g.ending=outcome(g.s,ms,n);return view(g,role)}
 http.createServer(async(req,res)=>{try{if(req.method==='GET'&&['/','/index.html'].includes(req.url)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(html)}
  if(req.method!=='POST'||!req.url.startsWith('/api/'))fail('Not found',404);let body='';for await(const chunk of req){body+=chunk;if(body.length>4096)fail('Request too large',413)}const result=handle(req.url.slice(5),JSON.parse(body));res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(result))}catch(e){res.writeHead(e.status||400,{'Content-Type':'application/json'});res.end(JSON.stringify({error:e.message}))}}).listen(port,'0.0.0.0',()=>{console.log('This computer: http://localhost:'+port);let addresses={};try{addresses=os.networkInterfaces()}catch{}for(const a of Object.values(addresses).flat())if(a.family==='IPv4'&&!a.internal)console.log('Other device on same Wi-Fi: http://'+a.address+':'+port)});
 
