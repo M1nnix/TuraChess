@@ -1158,7 +1158,7 @@ async function animateZipper(scene,token){
    animate(slider,[{transform:'translateY(0px)'},{transform:'translateY(68px)',offset:.44},{transform:'translateY(68px)',offset:.81},{transform:'translateY(0px)'}]),
    animate(actor,quick?[{opacity:outward?0:1},{opacity:outward?1:0}]:motion)
   ]);
- }catch{/* The move still commits if the board or animation is interrupted. */}
+ }catch{}
  finally{seam.remove();actor.remove();tile.style.zIndex=layer;if(original)original.style.visibility=hidden}
 }
 
