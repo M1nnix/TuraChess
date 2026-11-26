@@ -43,7 +43,17 @@
 #lobby footer{border-top:1px solid var(--line);margin-top:18px;padding-top:16px}#lobby button{min-height:44px;margin:0}#lobby #launch{width:auto;min-width:42%}#lobby [hidden]{display:none!important}
 #board .fatedPiece{background:#8253b9;box-shadow:inset 0 0 0 4px #edceff}#board .fatedTarget{outline:3px dashed #ebc5ff;outline-offset:-5px}
 @media(max-width:440px){.roomControls{grid-template-columns:1fr}.roomTicket{padding:6px 9px}.roomTop{gap:8px}#lobbyPlayers>div{padding:10px}}
-</style><style>#board .zipGhost{position:absolute;inset:0;display:grid;place-items:center;opacity:.5;pointer-events:none}#board .zipOverlap{transform:translate(-18%,-16%) scale(.7)}#board .zipPocket{position:absolute;right:4%;bottom:3%;background:#192624;color:#f2cf7f;border:1px solid #ddbd70;border-radius:5px;padding:0 3px;line-height:1.25;font-size:clamp(10px,2vw,18px);z-index:2}#board .zipChoice{box-shadow:inset 0 0 0 3px #e0c57a}</style></head><body><header><div class="brand"><span class="mark">♜</span>Tura Chess</div><button id="settingsOpen" class="ghost">Settings</button><button id="back" class="ghost" hidden>Main menu</button></header>
+</style><style>#board .zipGhost{position:absolute;inset:0;display:grid;place-items:center;opacity:.5;pointer-events:none}#board .zipOverlap{transform:translate(-18%,-16%) scale(.7)}#board .zipPocket{position:absolute;right:4%;bottom:3%;background:#192624;color:#f2cf7f;border:1px solid #ddbd70;border-radius:5px;padding:0 3px;line-height:1.25;font-size:clamp(10px,2vw,18px);z-index:2}#board .zipChoice{box-shadow:inset 0 0 0 3px #e0c57a}</style><style>
+#board .zipTurns{position:absolute;left:50%;top:2%;transform:translateX(-50%);z-index:6;min-width:1.5em;padding:1px 4px;border:1px solid #f6cd6a;border-radius:20px;background:#182651;color:#ffe7a6;font:bold clamp(9px,1.7cqw,15px)/1.1 system-ui;pointer-events:none;text-align:center}
+#board .zipActor{position:absolute;inset:0;pointer-events:none;z-index:9}
+#board .zipSeam{position:absolute;inset:7% 4%;pointer-events:none;z-index:8;filter:drop-shadow(0 1px 2px #050915)}
+#board .zipSeam svg{width:100%;height:100%;overflow:visible}
+#board .floorSeam{transform:translateY(26%) rotate(-10deg) scale(1.12,.43)}
+.players #powers :is(#zipPhase,#zipEnter,#zipStep){background:linear-gradient(112deg,var(--zip-base),#17233e 80%);border-color:var(--accent);color:#fff1c9}
+#zipPhase{--accent:#e5bc59;--zip-base:#344c87;--icon:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iIzM0NGM4NyIgc3Ryb2tlPSIjZTViYzU5Ii8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTViYzU5IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0ibTkgMTcgNiA3IDYtN20tNiA3di0xMyIvPjxwYXRoIGQ9Ik0yNSAxM2gzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDE2aDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMTloM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAyMmgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDI1aDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMjhoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAzMWgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDM0aDNtMyAxaDMiLz48cGF0aCBkPSJtMjIgNCA2IDggNy04Ii8+PHJlY3QgeD0iMjYiIHk9IjgiIHdpZHRoPSI2IiBoZWlnaHQ9IjkiIHJ4PSIyIi8+PC9nPjwvc3ZnPg==")}
+#zipEnter{--accent:#f2c660;--zip-base:#224678;--icon:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iIzIyNDY3OCIgc3Ryb2tlPSIjZjJjNjYwIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZjJjNjYwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTQgMjNoMTltLTUtNSA1IDUtNSA1Ii8+PHBhdGggZD0iTTI1IDEzaDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMTZoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAxOWgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDIyaDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMjVoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAyOGgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDMxaDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMzRoM20zIDFoMyIvPjxwYXRoIGQ9Im0yMiA0IDYgOCA3LTgiLz48cmVjdCB4PSIyNiIgeT0iOCIgd2lkdGg9IjYiIGhlaWdodD0iOSIgcng9IjIiLz48L2c+PC9zdmc+")}
+#zipStep{--accent:#a5d7ea;--zip-base:#2a5063;--icon:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjM4IiBoZWlnaHQ9IjM4IiByeD0iOSIgZmlsbD0iIzJhNTA2MyIgc3Ryb2tlPSIjYTVkN2VhIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYTVkN2VhIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0ibTQgMjkgNi02IDUgMSA2LThtLTYgMGg2djYiLz48cGF0aCBkPSJNMjUgMTNoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAxNmgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDE5aDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMjJoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAyNWgzbTMgMWgzIi8+PHBhdGggZD0iTTI1IDI4aDNtMyAxaDMiLz48cGF0aCBkPSJNMjUgMzFoM20zIDFoMyIvPjxwYXRoIGQ9Ik0yNSAzNGgzbTMgMWgzIi8+PHBhdGggZD0ibTIyIDQgNiA4IDctOCIvPjxyZWN0IHg9IjI2IiB5PSI4IiB3aWR0aD0iNiIgaGVpZ2h0PSI5IiByeD0iMiIvPjwvZz48L3N2Zz4=")}
+</style></head><body><header><div class="brand"><span class="mark">♜</span>Tura Chess</div><button id="settingsOpen" class="ghost">Settings</button><button id="back" class="ghost" hidden>Main menu</button></header>
 <main class="cover" id="menu"><div class="poster" aria-hidden="true"><div class="posterTitle">Tura<span>Chess.</span></div></div><form class="setup" id="setup"><h1>Play chess.</h1>
 <fieldset><legend>Ruleset</legend><div class="rulelist"><label class="rulepick"><input type="radio" name="ruleset" value="classic" checked> Classic</label><label class="rulepick"><input type="radio" id="bizzare" name="ruleset" value="bizzare"> Bizzare</label></div></fieldset><fieldset id="standOptions" hidden><legend>Stands</legend><div class="fields"><label>White<select id="wStand"><option value="crimson">King Crimson</option><option value="kira">Killer Queen</option><option value="d4c">D4C</option><option value="cmoon">C-Moon</option><option value="hand">The Hand</option><option value="echoes">Echoes</option><option value="star">Star Platinum</option><option value="requiem">Silver Chariot Requiem</option><option value="diamond">Crazy Diamond</option><option value="sticky">Sticky Fingers</option></select></label><label>Black<select id="bStand"><option value="crimson">King Crimson</option><option value="kira">Killer Queen</option><option value="d4c">D4C</option><option value="cmoon">C-Moon</option><option value="hand">The Hand</option><option value="echoes">Echoes</option><option value="star">Star Platinum</option><option value="requiem">Silver Chariot Requiem</option><option value="diamond">Crazy Diamond</option><option value="sticky">Sticky Fingers</option></select></label></div></fieldset><fieldset><legend>Opponent</legend><div class="modes"><label class="choice"><input type="radio" name="mode" value="bot" checked><i>♞</i>Computer</label><label class="choice"><input type="radio" name="mode" value="local"><i>♟♟</i>Pass &amp; play</label><label class="choice"><input type="radio" name="mode" value="duel"><i>♞♘</i>Bot vs bot</label><label class="choice"><input type="radio" name="mode" value="net"><i>♜</i>Online duel</label></div></fieldset>
 <fieldset id="levelField"><label class="caption" for="level">Bot difficulty</label><select id="level"><option value="Easy">Easy</option><option value="Medium" selected>Medium</option><option value="Hard">Hard</option><option value="Insane">Insane</option></select></fieldset>
@@ -666,7 +676,7 @@ function zipFinish(s,m,t){
   if(dest>=0&&t.b[dest]!=='.'&&white(t.b[dest])===white(s.b[a]))z.pockets[dest]=piece;
  }
  if(tick){if(s.stand.handFree!=='zip')z.separate[side]=Math.max(0,z.separate[side]-1);z.enter[side]=Math.max(0,z.enter[side]-1)}
- if(m.zip==='phase'){z.phase[side]={at:m.a,piece:s.b[m.a],left:s.b[m.a].toLowerCase()==='k'?1:3};z.separate[side]=9}
+ if(m.zip==='phase'){z.phase[side]={at:m.a,piece:s.b[m.a],left:s.b[m.a].toLowerCase()==='k'?1:2};z.separate[side]=9}
  if(m.zip==='enter'){z.pockets[m.z]=s.b[m.a];z.enter[side]=10}
  const ph=z.phase[side];
  if(ph&&m.zip==='step'){ph.at=m.z;if(m.p)ph.piece=s.w?m.p.toUpperCase():m.p}
@@ -837,6 +847,7 @@ function collectLabels(el){
 Object.assign(translations,{'The Hand — audio file':['The Hand — аудіофайл','The Hand — аудиофайл','The Hand — plik audio'],'Play sound':['Прослухати звук','Прослушать звук','Odtwórz dźwięk'],'Remove sound':['Видалити звук','Удалить звук','Usuń dźwięk']});
 Object.assign(translations,{"Match room": ["Ігрова кімната", "Игровая комната", "Pokój gry"], "Your stand": ["Твій стенд", "Твой стенд", "Twój stand"], "Colors are drawn when the match starts.": ["Кольори визначаються жеребкуванням на старті.", "Цвета распределяются случайно при старте.", "Kolory są losowane na początku partii."], "Leave room": ["Вийти з кімнати", "Выйти из комнаты", "Opuść pokój"], "Launch match": ["Запустити", "Запустить", "Rozpocznij grę"], "Choose a stand": ["Вибери стенд", "Выбери стенд", "Wybierz stand"], "Host": ["Хост", "Хост", "Gospodarz"], "Guest": ["Гість", "Гость", "Gość"], "Choosing a stand…": ["Вибирає стенд…", "Выбирает стенд…", "Wybiera stand…"], "In room": ["У кімнаті", "В комнате", "W pokoju"], "Waiting for the host to start.": ["Чекаємо, поки хост запустить гру.", "Ожидаем начала игры.", "Czekamy na rozpoczęcie gry."], "Room closed.": ["Кімнату закрито.", "Комната закрыта.", "Pokój zamknięty."], "Predicted move": ["Передбачений хід", "Предсказанный ход", "Przewidziany ruch"], "Preview your move and lock the predicted reply.": ["Переглянь свій хід і зафіксуй передбачену відповідь.", "Посмотри свой ход и зафиксируй предсказанный ответ.", "Sprawdź swój ruch i wymuś przewidzianą odpowiedź."], "Room is not ready": ["Кімната ще не готова", "Комната ещё не готова", "Pokój nie jest jeszcze gotowy"], "Host only": ["Тільки для хоста", "Только для хоста", "Tylko dla gospodarza"]});
 Object.assign(translations,{'Move phantom':['Хід фантомом','Ход фантомом','Ruch fantomem'],'Choose a piece to phase.':['Вибери фігуру для розділення.','Выбери фигуру для разделения.','Wybierz figurę do rozdzielenia.'],'Choose the passenger.':['Вибери фігуру, яку сховаєш.','Выбери фигуру, которую спрячешь.','Wybierz figurę do ukrycia.'],'Choose an enemy host.':['Вибери ворожу фігуру-носія.','Выбери вражескую фигуру-носителя.','Wybierz wrogą figurę jako nosiciela.'],'Choose a destination.':['Вибери клітину призначення.','Выбери клетку назначения.','Wybierz pole docelowe.'],'Click a marked host to emerge.':['Натисни на позначеного носія, щоб вийти.','Нажми на отмеченного носителя, чтобы выйти.','Kliknij oznaczonego nosiciela, aby wyjść.']});
+Object.assign(translations,{'Invisible turns remaining':['Залишилось ходів невидимості','Осталось ходов невидимости','Pozostałe tury niewidzialności']});
 collectLabels(document.body);
 function applySettings(){
  document.documentElement.lang=pref.lang;document.body.dataset.theme=pref.theme;document.body.classList.toggle('no-coords',!pref.coords);
@@ -1094,6 +1105,63 @@ function cdVoice(){try{cdAudio.currentTime=0;cdAudio.play().catch(()=>{});}catch
 Object.assign(translations,{'Restoration':['Відновлення','Восстановление','Przywrócenie'],'Reconstruction':['Реконструкція','Реконструкция','Rekonstrukcja'],'Choose a lost piece and its highlighted destination.':['Вибери втрачену фігуру та підсвічену клітинку.','Выбери потерянную фигуру и подсвеченную клетку.','Wybierz utraconą figurę i podświetlone pole.'],'Choose a piece to return to its starting square.':['Вибери фігуру, щоб повернути її на початкову клітинку.','Выбери фигуру для возвращения на начальную клетку.','Wybierz figurę, aby wrócić na pole początkowe.'],'Restoration points':['Очки відновлення','Очки восстановления','Punkty przywracania']});
 let zipMode='',zipFrom=null;
 const zipAudio={phase:new Audio('https://www.myinstants.com/media/sounds/sticky-fingers_TWvXM10.mp3'),enter:new Audio('https://www.myinstants.com/media/sounds/sticky-fingers-punch-sound.mp3')};
+function zipperScenes(before,m,after,viewer){
+ if(viewer<0||!before.stand?.type.includes('sticky'))return [];
+ const side=+!before.w,old=zipState(before),next=zipState(after),scenes=[];
+ if(viewer===side){
+  if(m.zip==='phase')scenes.push({kind:'sink',at:m.a,from:m.a,to:m.a,piece:before.b[m.a]});
+  if(m.zip==='enter')scenes.push({kind:'enter',at:m.z,from:m.a,to:m.z,piece:before.b[m.a]});
+  if(m.zip==='exit')scenes.push({kind:'exit',at:m.a,from:m.a,to:m.z,piece:old.pockets[m.a]});
+ }
+ const ph=old.phase[viewer];
+ if(ph&&!next.phase[viewer]){
+  const at=side===viewer&&m.zip==='step'?m.z:ph.at;
+  scenes.push({kind:'rise',at,from:at,to:at,piece:after.b[at]});
+ }
+ return scenes;
+}
+function zipperArtwork(){
+ // Two staggered rows of metal teeth frame the slit. The slider travels down the seam.
+ const teeth=Array.from({length:11},(_,i)=>{
+  const y=9+i*7,spread=3+12*Math.sin(Math.PI*(y-4)/90);
+  return '<path d="M'+(50-spread-3)+' '+y+'h5m'+(2*spread-4)+' 2h5"/>';
+ }).join('');
+ return '<svg viewBox="0 0 100 100" aria-hidden="true"><g class="zipOpening"><path fill="#101529" stroke="#293b79" stroke-width="3" d="M50 4 Q21 39 50 94 Q79 39 50 4Z"/><g fill="none" stroke="#f6cc63" stroke-width="4">'+teeth+'</g></g><g class="zipSlider" fill="#facb59" stroke="#714621" stroke-width="2.5"><rect x="43" y="3" width="15" height="9" rx="3"/><rect x="47" y="10" width="7" height="16" rx="3" fill="#e3a736"/><path d="M50.5 19v3"/></g></svg>';
+}
+async function animateZipper(scene,token){
+ if(token!==epoch)return;
+ const tile=boardTile(scene.at),from=boardTile(scene.from),to=boardTile(scene.to);
+ if(!tile||!from||!to)return;
+ const floor=scene.kind==='sink'||scene.kind==='rise',outward=scene.kind==='rise'||scene.kind==='exit';
+ const seam=document.createElement('span'),actor=document.createElement('span');
+ seam.className='zipSeam'+(floor?' floorSeam':'');seam.innerHTML=zipperArtwork();
+ actor.className='piece zipActor '+(white(scene.piece)?'white':'');actor.textContent=glyph(scene.piece)+'︎';
+ const original=outward?null:from.querySelector('.piece:not(.zipGhost)');
+ const hidden=original?.style.visibility,layer=tile.style.zIndex;
+ const boxes=[from,tile,to].map(el=>el.getBoundingClientRect());
+ const offset=(box)=>'translate('+(box.left-boxes[1].left)+'px,'+(box.top-boxes[1].top)+'px)';
+ const aperture=floor?'translateY(26%) scale(.42,.03)':'scale(.08,.25)';
+ const quick=matchMedia('(prefers-reduced-motion: reduce)').matches,ms=quick?120:1080;
+ try{
+  tile.style.zIndex=10;tile.append(seam,actor);if(original)original.style.visibility='hidden';
+  const animate=(el,frames)=>el.animate(frames,{duration:ms,fill:'both',easing:'linear'}).finished;
+  const mouth=seam.querySelector('.zipOpening'),slider=seam.querySelector('.zipSlider');
+  const motion=outward?[
+   {opacity:0,transform:aperture,offset:0},{opacity:0,transform:aperture,offset:.38},
+   {opacity:1,transform:'scale(.7)',offset:.60},{opacity:1,transform:offset(boxes[2]),offset:.92},{opacity:1,transform:offset(boxes[2])}
+  ]:[
+   {opacity:1,transform:offset(boxes[0])},{opacity:1,transform:offset(boxes[0]),offset:.35},
+   {opacity:1,transform:'scale(.82)',offset:.65},{opacity:0,transform:aperture,offset:.84},{opacity:0,transform:aperture}
+  ];
+  await Promise.all([
+   animate(mouth,[{clipPath:'inset(0 0 98% 0)'},{clipPath:'inset(0 0 0% 0)',offset:.44},{clipPath:'inset(0 0 0% 0)',offset:.81},{clipPath:'inset(0 0 98% 0)'}]),
+   animate(slider,[{transform:'translateY(0px)'},{transform:'translateY(68px)',offset:.44},{transform:'translateY(68px)',offset:.81},{transform:'translateY(0px)'}]),
+   animate(actor,quick?[{opacity:outward?0:1},{opacity:outward?1:0}]:motion)
+  ]);
+ }catch{/* The move still commits if the board or animation is interrupted. */}
+ finally{seam.remove();actor.remove();tile.style.zIndex=layer;if(original)original.style.visibility=hidden}
+}
+
 const zipButtons=[['zipPhase','phase','Zipper Separation'],['zipEnter','enter','Zipper Stowaway'],['zipStep','step','Move phantom']];
 function zipHUD(idx,ctl){
  const active=s.stand.type[idx]==='sticky',data=zipState(s);
@@ -1322,7 +1390,7 @@ function draw(motion=null,display=s){const board=$('board');board.classList.togg
  b.setAttribute('aria-label',sq(i)+(p==='.'?'':' '+tr(names[p.toLowerCase()])));b.innerHTML=(n%8===0?'<b>'+sq(i)[1]+'</b>':'')+(n>=56?'<em>'+sq(i)[0]+'</em>':'')+(p!=='.'?'<span class="piece '+(white(p)?'white':'')+'">'+glyph(p)+'︎</span>':'');const mine=display.stand?.mines.some(list=>list.includes(i));if(mine||bombSquare===i)b.innerHTML+='<span class="bombMark" title="'+tr('First Bomb')+'">✦</span>';const ticks=(display===s&&moonPlan.mark===i)?2:display.stand?.marks[i];if(ticks)b.innerHTML+='<span class="moonMark">☾ '+ticks+'</span>';if(moonChoice==='mark'&&p===(s.w?'P':'p')&&!ticks)b.className+=' moonEligible';if(display===s&&handMode){if(handHighlight(i))b.classList.add('handEligible');if(i===handAnchor)b.classList.add('handAnchor');if(handAnchor!==null&&legal.some(m=>m.hand==='pull'&&m.anchor===handAnchor&&m.z===i))b.classList.add('handDestination')}const rec=display.stand?.swaps?.[i];if(rec&&rec.kind==='enemy'&&rec.owner===scrViewer()){const mark=document.createElement('span');mark.className='scrMark';mark.textContent=glyph(rec.type)+' '+(rec.permanent?'∞':rec.left);mark.title='Movement: '+names[rec.type]+' · '+(rec.permanent?'Permanent':rec.left); b.append(mark);}if(display===s&&scrMode){if(i===scrAnchor)b.classList.add('scrSelected');else if(legal.some(m=>m.swap===scrMode&&(scrAnchor===null?(m.a===i||m.z===i):(m.a===i&&m.z===scrAnchor||m.z===i&&m.a===scrAnchor))))b.classList.add('scrEligible');}if(display===s&&cdMode&&legal.some(m=>m.cd===cdMode&&(cdMode==='restore'?m.lost===cdLost&&m.z===i:m.a===i)))b.classList.add('scrEligible');const trap=display.stand?.traps?.[i];if(trap){const mark=document.createElement('span');mark.className='echoTrap '+trap.kind+' owner'+trap.owner;mark.textContent=trap.kind==='whoosh'?'WHOOSH':'SIZZLE';mark.setAttribute('aria-label',mark.textContent);mark.title=(trap.owner===0?tr('White'):tr('Black'))+' · '+(trap.kind==='whoosh'?'Whoosh':'Sizzle');b.append(mark);}
   if(display.stand?.frozen?.[i]!==undefined){b.classList.add('echoFrozen');const mark=document.createElement('span');mark.className='echoLock';mark.textContent='3';mark.title='3 Freeze';b.append(mark);}
   if(display===s&&echoMode&&(echoMode==='freeze'?legal.some(m=>m.echo==='freeze'&&m.a===i):legal.some(m=>['burn','whoosh'].includes(m.echo)&&m.a===i)))b.classList.add('echoEligible');if(display===s&&echoCell===i)b.classList.add('echoSelected');if(display===s&&starMode==='finger'&&legal.some(m=>m.finger&&m.z===i))b.classList.add('starEligible');if(display===s&&s.stand?.stopped===+!s.w&&(s.stand.stopUsed[+!s.w]||[]).includes(i))b.classList.add('timeStopUsed');const viewer=scrViewer(),data=display.stand?.zip,ghost=data?.phase[viewer],passenger=data?.pockets[i];
- if(ghost?.at===i){const g=document.createElement('span');g.className='piece zipGhost '+(white(ghost.piece)?'white ':'')+(p!=='.'?'zipOverlap':'');g.textContent=glyph(ghost.piece)+'︎';b.append(g);b.title='Zipper Separation · '+Math.max(1,ghost.left);b.setAttribute('aria-label',b.getAttribute('aria-label')+' · '+tr(names[ghost.piece.toLowerCase()]))}
+ if(ghost?.at===i){const g=document.createElement('span');g.className='piece zipGhost '+(white(ghost.piece)?'white ':'')+(p!=='.'?'zipOverlap':'');g.textContent=glyph(ghost.piece)+'︎';b.append(g);const count=document.createElement('span');count.className='zipTurns';count.textContent=String(Math.max(1,ghost.left));count.title=tr('Invisible turns remaining');b.append(count);b.title='Zipper Separation · '+Math.max(1,ghost.left);b.setAttribute('aria-label',b.getAttribute('aria-label')+' · '+tr(names[ghost.piece.toLowerCase()]))}
  if(passenger&&+!white(passenger)===viewer){const tag=document.createElement('span');tag.className='zipPocket';tag.textContent='↗ '+glyph(passenger);b.append(tag)}
  if(display===s&&zipMode&&legal.some(m=>m.zip===zipMode&&(zipFrom===null?m.a===i:m.a===zipFrom&&m.z===i)))b.classList.add('zipChoice');
  b.onclick=()=>pick(i);board.append(b);
@@ -1368,7 +1436,9 @@ async function play(m,review=null,replay=false){
  const before=s, special=m.via!==undefined,firstSeen=eraseStage===2&&viaSquare===m.via;stopPreview();vision=false;eraseStage=0;viaSquare=null;clearHint();
  if(mode!=='net'){seats();if(ending)return;clocks=clockNow();stamp=Date.now()}
  const t=apply(before,m),reason=dustTrigger(before,m,t),mine=bombHit(before,m),token=epoch;
- selection=null;const wall=m.swap||t.echoEvent?null:barrier(before,m);if(!replay){if(m.zip==='phase'||m.zip==='enter'){const audio=zipAudio[m.zip];audio.currentTime=0;audio.play().catch(()=>{})}if(m.cd){cdVoice();fxActive=true;const ok=await animateDiamond(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.swap)scrVoice();if(m.stop||m.finger){fxActive=true;const ok=await animateStar(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.travel){const arrival=t.echoEvent?{...t,b:plainMove(before,m).b}:t;if(!await animateD4(before,m,arrival,null,token))return;stamp=Date.now()}if(m.echo||t.echoEvent){if(!await animateEcho(before,m,t,token))return;stamp=Date.now()}if(m.hand){if(!await animateHand(before,m,t,token))return;stamp=Date.now()}
+ selection=null;const wall=m.swap||t.echoEvent?null:barrier(before,m);if(!replay){if(m.zip==='phase'||m.zip==='enter'||m.zip==='exit'){const audio=zipAudio[m.zip==='exit'?'enter':m.zip];try{audio.currentTime=0;audio.play().catch(()=>{})}catch{}}
+ const scenes=zipperScenes(before,m,t,scrViewer());if(scenes.length){fxActive=true;try{for(const scene of scenes)await animateZipper(scene,token)}finally{if(epoch===token){fxActive=false;stamp=Date.now()}}if(epoch!==token)return}
+ if(m.cd){cdVoice();fxActive=true;const ok=await animateDiamond(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.swap)scrVoice();if(m.stop||m.finger){fxActive=true;const ok=await animateStar(before,m,t,token);if(!ok)return;fxActive=false;fxLabel='';stamp=Date.now()}if(m.travel){const arrival=t.echoEvent?{...t,b:plainMove(before,m).b}:t;if(!await animateD4(before,m,arrival,null,token))return;stamp=Date.now()}if(m.echo||t.echoEvent){if(!await animateEcho(before,m,t,token))return;stamp=Date.now()}if(m.hand){if(!await animateHand(before,m,t,token))return;stamp=Date.now()}
  if(wall&&!m.travel&&!m.finger&&!m.stop){if(!await animateD4(before,m,t,wall,token))return;stamp=Date.now()}
  if((reason||mine!==null)&&!zipSecret(before,m)){fxActive=true;busy=true;let ok=false;try{ok=await animateQueen(before,t.echoEvent?.move||m,t,reason,mine,firstSeen,token)}catch(error){if(!reason){fxActive=false;busy=false;fxLabel='';throw error;}console.warn('Bites the Dust animation interrupted; applying rewind.',error);ok=token===epoch;}if(!ok||token!==epoch)return;fxActive=false;fxLabel='';busy=false;stamp=Date.now()}
  }
