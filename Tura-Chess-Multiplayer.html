@@ -288,12 +288,26 @@ function boundedBot(s,d,noise,ms){
  catch(e){if(e!==ENGINE_TIMEOUT)throw e;return fallback;}
  finally{engineDeadline=old;}
 }
+// Epitaph uses the same scoring pool and grade thresholds as the move review.
+// A partially searched depth must never be used to classify a reply.
 function forecastReply(pos){
- const all=actions(pos);
- const ordinary=all.filter(m=>!m.zip&&!m.cd&&!m.swap&&!m.echo&&!m.stop&&!m.hand&&!m.finger&&!m.travel&&m.via===undefined);
- if(!ordinary.length)return all[0]||null;
- const prior=engineDeadline;engineDeadline=performance.now()+360;
- try{return progressiveChoice(pos,ordinary,2,0)}finally{engineDeadline=prior}
+ if(pos.stand?.stopped===+!pos.w)return null;
+ const pool=reviewPool(pos);
+ const ordinary=m=>!m.zip&&!m.cd&&!m.swap&&!m.echo&&!m.stop&&!m.hand&&!m.finger&&!m.travel&&!m.moody&&m.via===undefined;
+ if(pool.length<2||!pool.some(ordinary))return null;
+ const prior=engineDeadline;engineDeadline=performance.now()+800;
+ let ranked=null;
+ try{for(let depth=1;depth<=3;depth++){
+  const round=[];
+  for(const m of pool){engineCheck();round.push({m,v:actionValue(pos,m,depth-1,-1e6,1e6,1)});}
+  ranked=round.sort((a,b)=>b.v-a.v);
+ }}catch(e){if(e!==ENGINE_TIMEOUT)throw e;}finally{engineDeadline=prior;}
+ if(!ranked)return null;
+ const top=ranked[0];
+ const candidates=ranked.filter(x=>ordinary(x.m)&&top.v-x.v>55&&top.v-x.v<=220);
+ if(!candidates.length)return null;
+ const chosen=candidates[Math.floor(Math.random()*candidates.length)],loss=top.v-chosen.v;
+ return {reply:chosen.m,review:{grade:loss<=110?'Inaccuracy':'Mistake',loss,best:pathName(top.m)}};
 }
 function boundedReview(s,m,d){
  const old=engineDeadline;engineDeadline=performance.now()+220;let result=null;
@@ -824,7 +838,8 @@ function progressiveChoice(s,pool,depth,noise){
  }}catch(e){if(e!==ENGINE_TIMEOUT)throw e;}
  return best;
 }
-function analyse(s,played,depth,noise=0){if(played?.cd||played?.swap||played?.echo||played?.stop||s.stand?.stopped===+!s.w&&played)return {grade:'Good',loss:0,best:pathName(played)};if(played?.mark!==undefined||played?.shift)s=moonPrepare(s,played);if(played?.arm!==undefined)s=armed(s,played.arm);const all=actions(s).filter(m=>!m.echo&&!m.stop&&!m.swap),pool=all.filter(m=>!m.hand).concat(uniqueHand(all.filter(m=>m.hand)));if(!pool.length&&scrActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:scrActions(s)[0];if(!pool.length&&starStopActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:starStopActions(s)[0];if(!pool.length&&echoActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:echoActions(s)[0];if(played?.hand&&!pool.some(m=>same(m,played)))pool.push(played);if(!played&&engineDeadline!==Infinity)return progressiveChoice(s,pool,depth,noise);const ranked=pool.map(m=>({m,v:actionValue(s,m,depth-1,-1e6,1e6,1)})).sort((a,b)=>b.v-a.v);
+function reviewPool(s){const all=actions(s).filter(m=>!m.echo&&!m.stop&&!m.swap);return all.filter(m=>!m.hand).concat(uniqueHand(all.filter(m=>m.hand)));}
+function analyse(s,played,depth,noise=0){if(played?.cd||played?.swap||played?.echo||played?.stop||s.stand?.stopped===+!s.w&&played)return {grade:'Good',loss:0,best:pathName(played)};if(played?.mark!==undefined||played?.shift)s=moonPrepare(s,played);if(played?.arm!==undefined)s=armed(s,played.arm);const pool=reviewPool(s);if(!pool.length&&scrActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:scrActions(s)[0];if(!pool.length&&starStopActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:starStopActions(s)[0];if(!pool.length&&echoActions(s).length)return played?{grade:'Forced',loss:0,best:pathName(played)}:echoActions(s)[0];if(played?.hand&&!pool.some(m=>same(m,played)))pool.push(played);if(!played&&engineDeadline!==Infinity)return progressiveChoice(s,pool,depth,noise);const ranked=pool.map(m=>({m,v:actionValue(s,m,depth-1,-1e6,1e6,1)})).sort((a,b)=>b.v-a.v);
  if(!played){
  const choices=ranked.map(x=>({m:x.m,v:x.v+Math.random()*noise}));choices.sort((a,b)=>b.v-a.v);return choices[0].m}
 
@@ -885,6 +900,7 @@ Object.assign(translations,{'The Hand — audio file':['The Hand — аудіо�
 Object.assign(translations,{"Match room": ["Ігрова кімната", "Игровая комната", "Pokój gry"], "Your stand": ["Твій стенд", "Твой стенд", "Twój stand"], "Colors are drawn when the match starts.": ["Кольори визначаються жеребкуванням на старті.", "Цвета распределяются случайно при старте.", "Kolory są losowane na początku partii."], "Leave room": ["Вийти з кімнати", "Выйти из комнаты", "Opuść pokój"], "Launch match": ["Запустити", "Запустить", "Rozpocznij grę"], "Choose a stand": ["Вибери стенд", "Выбери стенд", "Wybierz stand"], "Host": ["Хост", "Хост", "Gospodarz"], "Guest": ["Гість", "Гость", "Gość"], "Choosing a stand…": ["Вибирає стенд…", "Выбирает стенд…", "Wybiera stand…"], "In room": ["У кімнаті", "В комнате", "W pokoju"], "Waiting for the host to start.": ["Чекаємо, поки хост запустить гру.", "Ожидаем начала игры.", "Czekamy na rozpoczęcie gry."], "Room closed.": ["Кімнату закрито.", "Комната закрыта.", "Pokój zamknięty."], "Predicted move": ["Передбачений хід", "Предсказанный ход", "Przewidziany ruch"], "Preview your move and lock the predicted reply.": ["Переглянь свій хід і зафіксуй передбачену відповідь.", "Посмотри свой ход и зафиксируй предсказанный ответ.", "Sprawdź swój ruch i wymuś przewidzianą odpowiedź."], "Room is not ready": ["Кімната ще не готова", "Комната ещё не готова", "Pokój nie jest jeszcze gotowy"], "Host only": ["Тільки для хоста", "Только для хоста", "Tylko dla gospodarza"]});
 Object.assign(translations,{'Move phantom':['Хід фантомом','Ход фантомом','Ruch fantomem'],'Choose a piece to phase.':['Вибери фігуру для розділення.','Выбери фигуру для разделения.','Wybierz figurę do rozdzielenia.'],'Choose the passenger.':['Вибери фігуру, яку сховаєш.','Выбери фигуру, которую спрячешь.','Wybierz figurę do ukrycia.'],'Choose an enemy host.':['Вибери ворожу фігуру-носія.','Выбери вражескую фигуру-носителя.','Wybierz wrogą figurę jako nosiciela.'],'Choose a destination.':['Вибери клітину призначення.','Выбери клетку назначения.','Wybierz pole docelowe.'],'Click a marked host to emerge.':['Натисни на позначеного носія, щоб вийти.','Нажми на отмеченного носителя, чтобы выйти.','Kliknij oznaczonego nosiciela, aby wyjść.']});
 Object.assign(translations,{'Invisible turns remaining':['Залишилось ходів невидимості','Осталось ходов невидимости','Pozostałe tury niewidzialności']});
+Object.assign(translations,{'No Inaccuracy or Mistake available. Choose another move.':['Немає ходів з оцінкою Inaccuracy або Mistake. Вибери інший хід.','Нет ходов с оценкой Inaccuracy или Mistake. Выбери другой ход.','Brak ruchów z oceną Inaccuracy lub Mistake. Wybierz inny ruch.']});
 collectLabels(document.body);
 function applySettings(){
  document.documentElement.lang=pref.lang;document.body.dataset.theme=pref.theme;document.body.classList.toggle('no-coords',!pref.coords);
@@ -1343,7 +1359,7 @@ function standHUD(){
  const cd=(label,n)=>label+(n?' · '+n:'');
  $('visionBtn').hidden=mode!=='bot'&&mode!=='net'&&!(mode==='duel'&&duelPlayer!==null);$('visionBtn').textContent=cd(tr('Epitaph'),s.stand.vision[idx]);$('eraseBtn').textContent=cd('Time Erase',s.stand.erase[idx]);
  $('visionBtn').disabled=!ctl||!!s.stand.vision[idx]||!!eraseStage;$('eraseBtn').disabled=!ctl||!!s.stand.erase[idx]||(!eraseStage&&!legal.some(m=>m.via!==undefined));
- $('visionBtn').setAttribute('aria-pressed',String(vision));$('eraseBtn').setAttribute('aria-pressed',String(!!eraseStage));$('commitVision').hidden=!preview?.ready||!ctl;
+ $('visionBtn').setAttribute('aria-pressed',String(vision));$('eraseBtn').setAttribute('aria-pressed',String(!!eraseStage));$('commitVision').hidden=!preview?.ready||!preview?.reply||!ctl;
  $('powerNote').textContent=ending?'':preview?.text||(vision?tr(mode==='net'?'Preview your move and lock the predicted reply.':'Choose your move to see the reply.'):eraseStage?tr(eraseStage===1?'Choose the first king step.':'Choose a safe landing square.'):'King Crimson');
  $('eraseBtn').hidden=false;kiraHUD(idx,ctl);d4HUD(idx,ctl);moonHUD(idx,ctl);handHUD(idx,ctl);moodyHUD(idx,ctl);echoHUD(idx,ctl);starHUD(idx,ctl);scrHUD(idx,ctl);cdHUD(idx,ctl);zipHUD(idx,ctl);if(room?.w===s.w&&forcedMove)$('powerNote').textContent=tr('Predicted move')+' · '+pathName(forcedMove);document.body.classList.toggle('erasing',!!eraseStage)
 }
@@ -1370,19 +1386,19 @@ async function netForetell(m){
  try{
   const v=await api('forecast',{...room,ply:netIndex,m});
   if(preview!==pending)return;
-  Object.assign(pending,{ready:true,reply:v.reply,text:pathName(m)+' · '+(v.reply?tr('Predicted move')+' '+pathName(v.reply):tr(v.reason))});draw();
+  Object.assign(pending,{ready:!!v.reply,reply:v.reply,review:v.review,text:pathName(m)+' · '+(v.reply?tr('Predicted move')+' '+pathName(v.reply)+' · '+tr(v.review.grade):tr(v.reason||'No Inaccuracy or Mistake available. Choose another move.'))});draw();
  }catch(e){if(preview===pending){stopPreview();vision=false;draw();$('message').textContent=tr(e.message)}}
 }
 function foretell(m){
  stopPreview();const base=s,tag=epoch,move={...m,epitaph:true},next=apply(s,move);
  preview={m:move,text:tr('Reading the future…'),ready:false};selection=null;
- const ms=actions(next),k=key(next,ms),end=outcome(next,ms,(counts.get(k)||0)+1);
- if(end){Object.assign(preview,{ready:true,reply:null,text:pathName(m)+' · '+tr(end)});draw();return}
- const u=URL.createObjectURL(new Blob([$('rules').textContent,';onmessage=e=>postMessage(boundedBot(e.data.pos,e.data.depth,e.data.noise,[0,180,360,650,1000][e.data.depth]))'],{type:'application/javascript'}));oracle=new Worker(u);URL.revokeObjectURL(u);
- const current=oracle;current.onmessage=e=>{if(base!==s||epoch!==tag||current!==oracle||ending)return;current.terminate();oracle=null;preview.ready=true;preview.reply=e.data;preview.text=pathName(m)+' · '+tr('Bot reply')+' '+pathName(e.data);draw()};
- current.onerror=()=>{if(current===oracle){stopPreview();standHUD()}};const [depth,noise]=botSettings(next.w);current.postMessage({pos:next,depth,noise});draw()
+ const ms=actions(next),k=key(next,ms),end=dustTrigger(s,move,next)||outcome(next,ms,(counts.get(k)||0)+1);
+ if(end){Object.assign(preview,{ready:false,reply:null,text:pathName(m)+' · '+tr(end)});draw();return}
+ const u=URL.createObjectURL(new Blob([$('rules').textContent,';onmessage=e=>postMessage(forecastReply(e.data.pos))'],{type:'application/javascript'}));oracle=new Worker(u);URL.revokeObjectURL(u);
+ const current=oracle;current.onmessage=e=>{if(base!==s||epoch!==tag||current!==oracle||ending)return;current.terminate();oracle=null;const prediction=e.data;preview.ready=!!prediction;preview.reply=prediction?.reply||null;preview.review=prediction?.review||null;preview.text=pathName(m)+' · '+(prediction?tr('Bot reply')+' '+pathName(prediction.reply)+' · '+tr(prediction.review.grade):tr('No Inaccuracy or Mistake available. Choose another move.'));draw()};
+ current.onerror=()=>{if(current===oracle){stopPreview();standHUD()}};current.postMessage({pos:next});draw()
 }
-$('commitVision').onclick=()=>{if(!preview?.ready||ending)return;const {m,reply}=preview;stopPreview();vision=false;if(room){submit(m);return}lockedReply=reply;play(m)};
+$('commitVision').onclick=()=>{if(!preview?.ready||!preview.reply||ending)return;const {m,reply,review}=preview;stopPreview();vision=false;if(room){submit(m);return}lockedReply={...reply,epitaphReview:review};play(m)};
 function pickErase(i){const options=legal.filter(m=>m.via!==undefined);
  if(eraseStage===1&&options.some(m=>m.via===i)){viaSquare=i;eraseStage=2;firstStep();return}
  if(eraseStage===2){const chosen=options.find(m=>m.via===viaSquare&&m.z===i);if(chosen)submit(chosen)}
@@ -1552,6 +1568,7 @@ async function animateHand(before,m,next,token){
  await fxWait(490);if(token!==epoch)return false;fxActive=false;busy=false;fxLabel='';return true;
 }
 async function play(m,review=null,replay=false){
+ review=review||m.epitaphReview||null;
  if(fxActive||kingBombBlocked(s,m))return;zipMode='';zipFrom=null;echoMode='';echoCell=null;starMode='';scrMode='';scrAnchor=null;cdMode='';cdLost=null;travelMode=false;handMode="";handAnchor=null;moodyMode='';
  if(m.mark!==undefined&&m.mark!==moonPlan.mark)moonVoice(8);if(m.shift&&m.shift!==moonPlan.shift)moonVoice(Math.floor(Math.random()*8));moonPlan={};moonChoice='';
  if(m.arm!==undefined&&bombSquare!==m.arm)kiraVoice(0);
@@ -1585,7 +1602,7 @@ async function play(m,review=null,replay=false){
 function animateBot(reply,wait){
  const generation=epoch;
  pendingBot=setTimeout(()=>{if(generation!==epoch||ending||!busy)return;
- const finish=()=>{if(generation!==epoch||ending||!busy)return;busy=false;const i=isKira(s)?bestPawn(s):undefined;const {followup,...move}=reply;if(move.echo&&followup&&legal.some(m=>same(m,move))&&actions(apply(s,move)).some(m=>same(m,followup)))lockedReply=followup;play(i===undefined?move:{...move,arm:i})};
+ const finish=()=>{if(generation!==epoch||ending||!busy)return;busy=false;const i=!reply.epitaphReview&&isKira(s)?bestPawn(s):undefined;const {followup,...move}=reply;if(move.echo&&followup&&legal.some(m=>same(m,move))&&actions(apply(s,move)).some(m=>same(m,followup)))lockedReply=followup;play(i===undefined?move:{...move,arm:i})};
  if(reply.via===undefined){finish();return}
  eraseSound(0);eraseStage=2;viaSquare=reply.via;firstStep();pendingBot=setTimeout(finish,420)
  },wait)
@@ -1731,13 +1748,15 @@ function handle(action,d){let code=String(d.code||'').toUpperCase(),g=rooms.get(
    if(g.forecast?.key===forecastKey)return g.forecast;
    const next=apply(g.s,m),ms=moves(next);
    const reason=dustTrigger(g.s,m,next)||outcome(next,ms,(g.counts.get(key(next,ms))||0)+1);
-   const reply=reason?null:forecastReply(next);
-   return g.forecast={key:forecastKey,reply,reason};
+   const prediction=reason?null:forecastReply(next);
+   return g.forecast={key:forecastKey,reply:prediction?.reply||null,review:prediction?.review||null,reason:reason||(!prediction?'No Inaccuracy or Mistake available. Choose another move.':'')};
   }
   if(g.forecast?.key!==forecastKey)fail('Preview this move first');
+  if(!g.forecast.reply)fail('No Inaccuracy or Mistake available. Choose another move.');
  }
- const newLock=m.epitaph?g.forecast.reply:null;
- const before=g.s,next=apply(before,m),reason=dustTrigger(before,m,next);g.clocks=times(g);g.stamp=Date.now();g.forecast=null;g.forced=reason?null:newLock;if(reason){const target=completeDustRewind(before,m,next,g.history,g.historyMoves);g.historyMoves.splice(g.history.length-target.remove,target.remove);g.history.splice(g.history.length-target.remove,target.remove);g.s=target.position;g.counts=rebuildCounts(g.history,g.s);g.list.push(m);return view(g,role)}g.list.push(m);g.history.push(before);g.historyMoves.push(m);g.s=next;if(next.w===before.w)return view(g,role);g.clocks[+!before.w]+=g.inc*1000;const ms=moves(g.s),k=key(g.s,ms),n=(g.counts.get(k)||0)+1;g.counts.set(k,n);g.ending=outcome(g.s,ms,n);return view(g,role)}
+ if(g.forced&&g.forcedReview)m.epitaphReview=g.forcedReview;
+ const newLock=m.epitaph?g.forecast.reply:null,newReview=m.epitaph?g.forecast.review:null;
+ const before=g.s,next=apply(before,m),reason=dustTrigger(before,m,next);g.clocks=times(g);g.stamp=Date.now();g.forecast=null;g.forced=reason?null:newLock;g.forcedReview=reason?null:newReview;if(reason){const target=completeDustRewind(before,m,next,g.history,g.historyMoves);g.historyMoves.splice(g.history.length-target.remove,target.remove);g.history.splice(g.history.length-target.remove,target.remove);g.s=target.position;g.counts=rebuildCounts(g.history,g.s);g.list.push(m);return view(g,role)}g.list.push(m);g.history.push(before);g.historyMoves.push(m);g.s=next;if(next.w===before.w)return view(g,role);g.clocks[+!before.w]+=g.inc*1000;const ms=moves(g.s),k=key(g.s,ms),n=(g.counts.get(k)||0)+1;g.counts.set(k,n);g.ending=outcome(g.s,ms,n);return view(g,role)}
 http.createServer(async(req,res)=>{try{if(req.method==='GET'&&['/','/index.html'].includes(req.url)){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(html)}
  if(req.method!=='POST'||!req.url.startsWith('/api/'))fail('Not found',404);let body='';for await(const chunk of req){body+=chunk;if(body.length>4096)fail('Request too large',413)}const result=handle(req.url.slice(5),JSON.parse(body));res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(result))}catch(e){res.writeHead(e.status||400,{'Content-Type':'application/json'});res.end(JSON.stringify({error:e.message}))}}).listen(port,'0.0.0.0',()=>{console.log('This computer: http://localhost:'+port);let addresses={};try{addresses=os.networkInterfaces()}catch{}for(const a of Object.values(addresses).flat())if(a.family==='IPv4'&&!a.internal)console.log('Other device on same Wi-Fi: http://'+a.address+':'+port)});
 
