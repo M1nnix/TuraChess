@@ -164,7 +164,7 @@ function rewindTarget(pos,history,recorded=[]){
  let start=history.length;
  const taken=[0,0];taken[+!pos.w]=1;
  const hasRecords=recorded.length===history.length;
- const isMove=i=>{const m=recorded[i];return !hasRecords||!!(m&&(!freeAction(m)||m.swap||history[i].w!==(history[i+1]||pos).w))};
+ const isMove=i=>{const m=recorded[i];return !hasRecords||!!(m&&(!freeAction(m)||history[i].w!==(history[i+1]||pos).w))};
  while(start>0&&(taken[0]<2||taken[1]<2)){
   const i=--start;
   if(isMove(i))taken[+!history[i].w]++;
@@ -248,10 +248,10 @@ function moonPrepare(s,m={}){
  if(st?.type[side]!=='cmoon')return s;
  let next=st;
  if(m.mark!==undefined&&st.change[side]===0&&Number.isInteger(m.mark)&&s.b[m.mark]===(s.w?'P':'p')&&!st.marks[m.mark]){
-  next={...next,marks:{...st.marks,[m.mark]:2},change:st.change.map((n,i)=>i===side?8:n)};
+  next={...next,marks:{...st.marks,[m.mark]:2},change:st.change.map((n,i)=>i===side?7:n)};
  }
  if(gravityDirections.includes(m.shift)&&!st.shiftCD[side]){
-  next={...next,queued:m.shift,shiftCD:st.shiftCD.map((n,i)=>i===side?10:n)};
+  next={...next,queued:m.shift,shiftCD:st.shiftCD.map((n,i)=>i===side?9:n)};
  }
  return next===st?s:{...s,stand:next};
 }
@@ -393,7 +393,7 @@ function moonBot(s,d,noise){
  return {...analyse(pos,null,d,noise),...prep};
 }
 
-function standState(types=[],seed=Math.floor(Math.random()*4294967296)){return {seed,force:"",queued:"",marks:{},change:[0,0],shiftCD:[0,1].map(i=>types?.[i]==="cmoon"?9:0),closure:[0,0],deletion:[0,0],freezeCD:[0,0],soundCD:[0,0],finger:[0,0],stop:[0,1].map(i=>types?.[i]==='star'?8:0),stopped:-1,stopMoves:[0,0],stopUsed:[[],[]],stopCaptured:[0,0],restoreCD:[0,0],reconstructCD:[0,0],swapOwn:[0,1].map(i=>types?.[i]==='requiem'?6:0),swapEnemy:[0,1].map(i=>types?.[i]==='requiem'?6:0),rebroadcast:[0,0],playback:[0,0],swaps:{},frozen:{},traps:{},handFree:false,moodyData:null,type:[0,1].map(i=>['kira','d4c','cmoon','hand','echoes','star','requiem','diamond','sticky','moody'].includes(types?.[i])?types[i]:'crimson'),travel:[0,0],love:[0,1].map(i=>types?.[i]==='d4c'?12:0),erase:[0,0],vision:[0,0],dust:[0,1].map(i=>types?.[i]==='kira'?10:0),fuse:[0,0],mines:[[],[]]}}
+function standState(types=[],seed=Math.floor(Math.random()*4294967296)){return {seed,force:"",queued:"",marks:{},change:[0,0],shiftCD:[0,1].map(i=>types?.[i]==="cmoon"?8:0),closure:[0,0],deletion:[0,0],freezeCD:[0,0],soundCD:[0,0],finger:[0,0],stop:[0,1].map(i=>types?.[i]==='star'?8:0),stopped:-1,stopMoves:[0,0],stopUsed:[[],[]],stopCaptured:[0,0],restoreCD:[0,0],reconstructCD:[0,0],swapOwn:[0,1].map(i=>types?.[i]==='requiem'?6:0),swapEnemy:[0,1].map(i=>types?.[i]==='requiem'?6:0),rebroadcast:[0,0],playback:[0,0],swaps:{},frozen:{},traps:{},handFree:false,moodyData:null,type:[0,1].map(i=>['kira','d4c','cmoon','hand','echoes','star','requiem','diamond','sticky','moody'].includes(types?.[i])?types[i]:'crimson'),travel:[0,0],love:[0,1].map(i=>types?.[i]==='d4c'?12:0),erase:[0,0],vision:[0,0],dust:[0,1].map(i=>types?.[i]==='kira'?10:0),fuse:[0,0],mines:[[],[]]}}
 function kingSteps(pos,from){
  const out=[],r=from>>3,c=from%8;
  for(const [dr,dc] of dirs){if(!inside(r+dr,c+dc))continue;const z=(r+dr)*8+c+dc,p=pos.b[z];if(p==='.'||white(p)!==pos.w&&p.toLowerCase()!=='k')out.push(z)}
@@ -416,7 +416,7 @@ function starFingerActions(pos){
  for(const [dr,dc] of dirs){const r=k>>3,c=k%8;if(!inside(r+2*dr,c+2*dc))continue;const mid=(r+dr)*8+c+dc,z=(r+2*dr)*8+c+2*dc,t=pos.b[z];if(pos.b[mid]!=='.'||t==='.'||white(t)===pos.w||t.toLowerCase()==='k')continue;const m={finger:true,a:k,z,p:''};if(kingBombBlocked(pos,m))continue;const n=apply(pos,m);if(!attacked(n,k,!pos.w))out.push(m);}
  return out;
 }
-function startTimeStopPosition(pos,m){const st=pos.stand,side=+!pos.w;return {...pos,ep:-1,echoEvent:null,stand:{...st,handFree:'stop',stop:st.stop.map((n,i)=>i===side?14:n),stopped:side,stopCaptured:st.stopCaptured.map((n,i)=>i===side?0:n),stopMoves:st.stopMoves.map((n,i)=>i===side?4:n),stopUsed:st.stopUsed.map((v,i)=>i===side?[]:v.slice())}};}
+function startTimeStopPosition(pos,m){const st=pos.stand,side=+!pos.w;return {...pos,ep:-1,echoEvent:null,stand:{...st,handFree:'stop',stop:st.stop.map((n,i)=>i===side?13:n),stopped:side,stopCaptured:st.stopCaptured.map((n,i)=>i===side?0:n),stopMoves:st.stopMoves.map((n,i)=>i===side?4:n),stopUsed:st.stopUsed.map((v,i)=>i===side?[]:v.slice())}};}
 function starStopActions(pos){const st=pos.stand,side=+!pos.w;if(st?.type[side]!=='star'||st.stop[side]||st.stopped===side||st.handFree)return [];const k=pos.b.indexOf(pos.w?'K':'k'),m={stop:true,a:k,z:k,p:''};return moves(startTimeStopPosition(pos,m)).length?[m]:[];}
 function stopEligible(pos,m){return !pos.stand.stopUsed[+!pos.w].includes(m.a)&&(!captureSquares(pos,m).length||pos.stand.stopCaptured[+!pos.w]+captureSquares(pos,m).length<=1)&&!(pos.b[m.a].toLowerCase()==='k'&&Math.abs(m.z-m.a)===2)&&inGravity(pos,m);}
 function stopMovePosition(pos,m,probe=false){
@@ -443,7 +443,7 @@ function handPosition(pos,m){
  let rights=pos.rights;for(const [i,chars] of [[0,'q'],[4,'kq'],[7,'k'],[56,'Q'],[60,'KQ'],[63,'K']])if(i===m.a||(!removed&&i===m.z))for(const ch of chars)rights=rights.replace(ch,'');
  const out={...st,handFree:m.hand,force:st.force,queued:st.queued,marks:{...st.marks},mines:st.mines.map(list=>list.flatMap(i=>i===m.a?(removed?[]:[m.z]):[i]))};
  for(const k of ['erase','vision','travel','love','dust','fuse','change','shiftCD','closure','deletion','finger','stop','stopMoves'])out[k]=st[k].slice();out.stopUsed=st.stopUsed.map(a=>a.slice());out.stopped=st.stopped;
- out[m.hand==='pull'?'closure':'deletion'][side]=m.hand==='pull'?8:9;
+ out[m.hand==='pull'?'closure':'deletion'][side]=m.hand==='pull'?7:8;
  if(out.marks[m.a]){const count=out.marks[m.a];delete out.marks[m.a];if(!removed&&b[m.z]===piece)out.marks[m.z]=count;}
  return {...pos,b,w:pos.w,rights,ep:pos.ep>=0&&m.a!==pos.ep+(pos.w?8:-8)&&(removed||m.z!==pos.ep)?pos.ep:-1,half:removed||piece.toLowerCase()==='p'?0:pos.half,stand:out};
 }
@@ -459,8 +459,8 @@ function handActions(pos){
 const freeAction=m=>!!(m.zip==='phase'||m.hand||m.echo||m.travel||m.stop||m.swap||m.moody);
 function echoPosition(pos,m){
  const st=pos.stand,side=+!pos.w,out={...st,handFree:'echo:'+m.echo,frozen:{...st.frozen},traps:{...st.traps},freezeCD:st.freezeCD.slice(),soundCD:st.soundCD.slice()};
- if(m.echo==='freeze'){out.frozen[m.a]=side;out.freezeCD[side]=9;}
- else{out.traps[m.a]={owner:side,kind:m.echo};out.soundCD[side]=8;}
+ if(m.echo==='freeze'){out.frozen[m.a]=side;out.freezeCD[side]=7;}
+ else{out.traps[m.a]={owner:side,kind:m.echo};out.soundCD[side]=6;}
  return {...pos,stand:out,echoEvent:null};
 }
 function echoActions(pos){
@@ -524,7 +524,7 @@ function echoFinish(pos,m,next,hit){
 }
 function travelPosition(pos,m){
  const st=pos.stand,side=+!pos.w,hit=echoImpact(pos,m),raw=plainMove(pos,hit?.move||m);
- const next={...pos,...raw,w:pos.w,rights:raw.rights.replace(pos.w?/[KQ]/g:/[kq]/g,''),ep:pos.ep,half:pos.half,echoEvent:null,stand:{...st,handFree:'travel',travel:st.travel.map((n,i)=>i===side?6:n),marks:{...st.marks},mines:st.mines.map(x=>x.slice()),traps:{...st.traps}}};
+ const next={...pos,...raw,w:pos.w,rights:raw.rights.replace(pos.w?/[KQ]/g:/[kq]/g,''),ep:pos.ep,half:pos.half,echoEvent:null,stand:{...st,handFree:'travel',travel:st.travel.map((n,i)=>i===side?5:n),marks:{...st.marks},mines:st.mines.map(x=>x.slice()),traps:{...st.traps}}};
  if(hit){echoFinish(pos,m,next,hit);next.stand.freezeCD=st.freezeCD.slice();next.stand.soundCD=st.soundCD.slice();next.stand.frozen={...st.frozen};next.ep=pos.ep;next.half=pos.half;}
  return next;
 }
@@ -532,17 +532,12 @@ function travelPosition(pos,m){
 // Silver Chariot Requiem: identities stay unchanged; only movement types are exchanged.
 function scrType(s,i){return s.stand?.swaps?.[i]?.type||s.b[i].toLowerCase()}
 function scrPiece(s,i){const p=s.b[i],t=scrType(s,i);return white(p)?t.toUpperCase():t}
-function scrActions(s){const st=s.stand,side=+!s.w;if(st?.type[side]!=='requiem'||st.handFree)return [];const out=[];for(const [tag,cd] of [['own','swapOwn'],['enemy','swapEnemy']]){if(st[cd][side])continue;const cells=s.b.flatMap((p,i)=>p!=='.'&&p.toLowerCase()!=='k'&&white(p)===(tag==='own'?s.w:!s.w)&&!st.swaps[i]?[i]:[]);for(let x=0;x<cells.length;x++)for(let y=x+1;y<cells.length;y++){const a=cells[x],z=cells[y];if(s.b[a]!==s.b[z]){const m={swap:tag,a,z,p:''},t=scrPosition(s,m);if(!check({...t,w:s.w}))out.push(m);}}}return out}
+function scrActions(s){const st=s.stand,side=+!s.w;if(st?.type[side]!=='requiem'||st.handFree)return [];const out=[];for(const [tag,cd] of [['own','swapOwn'],['enemy','swapEnemy']]){if(st[cd][side])continue;const cells=s.b.flatMap((p,i)=>p!=='.'&&p.toLowerCase()!=='k'&&white(p)===(tag==='own'?s.w:!s.w)&&!st.swaps[i]?[i]:[]);for(let x=0;x<cells.length;x++)for(let y=x+1;y<cells.length;y++){const a=cells[x],z=cells[y];if(s.b[a]!==s.b[z]){const m={swap:tag,a,z,p:''},t=scrPosition(s,m);if(royalSafe(t,s.w)&&moves(t).some(x=>inGravity(t,x)))out.push(m);}}}return out}
 function scrPosition(s,m){
  const side=+!s.w,st=s.stand;
- const next={...s,w:!s.w,ep:-1,half:s.half+1,echoEvent:null,stand:{...st,handFree:false,force:st.queued||'',queued:''}};
- const out=next.stand;
- for(const field of ['erase','vision','travel','love','closure','deletion','finger','stop','dust','fuse','change','shiftCD','freezeCD','soundCD']){
-  out[field]=st[field].map((n,i)=>i===side?Math.max(0,n-1):n);
- }
- out.frozen=Object.fromEntries(Object.entries(st.frozen).filter(([,owner])=>owner===side));
- scrFinish(s,m,next,true);
- out[m.swap==='own'?'swapOwn':'swapEnemy'][side]=m.swap==='own'?11:13;
+ const out={...st,handFree:'swap:'+m.swap,swapOwn:st.swapOwn.slice(),swapEnemy:st.swapEnemy.slice(),swaps:{...st.swaps}};
+ const next={...s,echoEvent:null,stand:out};
+ out[m.swap==='own'?'swapOwn':'swapEnemy'][side]=m.swap==='own'?10:12;
  for(const [a,z] of [[m.a,m.z],[m.z,m.a]])out.swaps[a]={type:s.b[z].toLowerCase(),owner:side,kind:m.swap,left:4,known:false};
  return next;
 }
@@ -754,13 +749,13 @@ function applyOriginal(pos,m){
  if(pos.stand)return scrFinish(pos,m,echoFinish(pos,m,next,hit));return next;
 }
 
-function actions(pos){const ms=moves(pos);if(!pos.stand)return ms;const pool=pos.stand.stopped===+!pos.w?ms:ms.concat(erasePaths(pos),portals(pos),handActions(pos),echoActions(pos),starActions(pos),scrActions(pos),cdActions(pos),zipActions(pos),moodyActions(pos));const all=pool.filter(m=>inGravity(pos,m)&&(!pos.stand.zip||!apply(pos,m).zipInvalid));return pos.stand.queued?all.filter(m=>m.stop||m.swap||actions(apply(pos,m)).length):all}
+function actions(pos){const ms=moves(pos);if(!pos.stand)return ms;const pool=pos.stand.stopped===+!pos.w?ms:ms.concat(erasePaths(pos),portals(pos),handActions(pos),echoActions(pos),starActions(pos),scrActions(pos),cdActions(pos),zipActions(pos),moodyActions(pos));const all=pool.filter(m=>inGravity(pos,m)&&(!pos.stand.zip||!apply(pos,m).zipInvalid));return pos.stand.queued?all.filter(m=>m.stop||actions(apply(pos,m)).length):all}
 function applyBase(pos,m){if(m.hand)return handPosition(pos,m);if(m.arm!==undefined)pos=armed(pos,m.arm);if(m.mark!==undefined||m.shift)pos=moonPrepare(pos,m);
  const special=m.via!==undefined,mid=special?midpoint(pos,m.a,m.via):null;
  const wall=barrier(pos,m);const next=wall?deflect(pos,m,wall):special?plainMove(mid,{a:m.via,z:m.z,p:''}):m.finger?fingerRaw(pos,m):plainMove(pos,m);
  if(!pos.stand)return next;
  if(special&&!wall)next.half=(pos.b[m.via]!=='.'||(m.z!==m.a&&mid.b[m.z]!=='.'))?0:pos.half+1;
- const side=+!pos.w;next.stand={...pos.stand,handFree:false};for(const [field,used,cost] of [['erase',special||m.echoErased,6],['vision',m.epitaph,4],['travel',m.travel,6],['love',false,0],['closure',false,0],['deletion',false,0],['finger',!!m.finger,6],['stop',!!m.stop,14]]){
+ const side=+!pos.w;next.stand={...pos.stand,handFree:false};for(const [field,used,cost] of [['erase',special||m.echoErased,6],['vision',m.epitaph,4],['travel',m.travel,5],['love',false,0],['closure',false,0],['deletion',false,0],['finger',!!m.finger,6],['stop',!!m.stop,13]]){
  const cds=pos.stand[field].slice();cds[side]=used?cost:((field==='deletion'&&pos.stand.handFree==='delete')||(field==='closure'&&pos.stand.handFree==='pull')||(field==='travel'&&pos.stand.handFree==='travel'))?cds[side]:Math.max(0,cds[side]-1);next.stand[field]=cds}
  if(wall)next.stand.love[1-side]=12;propagateMines(pos,m,next);moonFinish(pos,m,next,wall);return next
 }
@@ -1085,6 +1080,7 @@ function moonHUD(idx,ctl){
   for(const [id,field,tag,title] of [['gravityMark','change','mark','Gravity Change'],['gravityShift','shiftCD','shift','Gravity Shift']]){
    const btn=$(id),cd=s.stand[field][idx];
    btn.textContent=title+' · '+(cd||tr('Ready'));
+   btn.title=title+' · '+(tag==='mark'?7:9)+' turns · Free action';
    btn.disabled=!ctl||!!cd||moonPlan[tag]!==undefined||(tag==='mark'&&!s.b.some((p,i)=>p===(s.w?'P':'p')&&!s.stand.marks[i]));
    btn.setAttribute('aria-pressed',String(ctl&&(moonChoice===tag||moonPlan[tag]!==undefined)));
   }
@@ -1124,7 +1120,7 @@ function d4HUD(idx,ctl){
  $('visionBtn').hidden=true;$('eraseBtn').hidden=true;
  $('travelBtn').disabled=!ctl||!legal.some(m=>m.travel);$('travelBtn').textContent='Dimension Travel · '+(s.stand.travel[idx]||tr('Ready'));
  $('travelBtn').setAttribute('aria-pressed',String(travelMode));$('loveBadge').textContent='Love Train · '+(s.stand.love[idx]||tr('Ready'));
- $('travelBtn').title='Dimension Travel · 6 turns · Free action';$('powerNote').textContent=fxLabel||dustNotice||tr(travelMode?'Choose a highlighted destination.':s.stand.handFree==='travel'&&idx===+!s.w?'Ability used. Make your move.':'Two friendly pieces must be orthogonally adjacent, or on opposite diagonal squares.')
+ $('travelBtn').title='Dimension Travel · 5 turns · Free action';$('powerNote').textContent=fxLabel||dustNotice||tr(travelMode?'Choose a highlighted destination.':s.stand.handFree==='travel'&&idx===+!s.w?'Ability used. Make your move.':'Two friendly pieces must be orthogonally adjacent, or on opposite diagonal squares.')
 }
 async function animateD4(pos,m,next,wall,token){
  fxActive=true;fxLabel=wall?'Love Train':'Dimension Travel';draw(null,pos);fxBanner(fxLabel);
@@ -1291,7 +1287,7 @@ Object.assign(translations,{'Choose an enemy piece within two squares of your ki
 
 const scrAudio=new Audio('https://www.myinstants.com/media/sounds/y2mate_cn87NwR.mp3');scrAudio.preload='auto';
 function scrVoice(){try{scrAudio.currentTime=0;scrAudio.play().catch(()=>{});}catch{}}
-function scrHUD(idx,ctl){const active=s.stand.type[idx]==='requiem';$('scrOwn').hidden=$('scrEnemy').hidden=!active;if(!active)return;$('visionBtn').hidden=$('eraseBtn').hidden=true;for(const [id,tag,field,name] of [['scrOwn','own','swapOwn','Allied Soul Exchange'],['scrEnemy','enemy','swapEnemy','Enemy Soul Exchange']]){const b=$(id),cd=s.stand[field][idx];b.textContent=name+' · '+(cd||tr('Ready'));b.disabled=!ctl||!!cd||!legal.some(m=>m.swap===tag);b.setAttribute('aria-pressed',String(scrMode===tag));b.title='Swap movement types for four rounds; if one is lost, the survivor keeps its movement permanently · Initial cooldown: 6 turns · Subsequent cooldown: '+(tag==='own'?11:13)+' turns';}$('powerNote').textContent=scrMode?(scrAnchor===null?'Choose the first piece.':'Choose the second piece.'):'Silver Chariot Requiem · Soul Exchange (4 rounds)';}
+function scrHUD(idx,ctl){const active=s.stand.type[idx]==='requiem';$('scrOwn').hidden=$('scrEnemy').hidden=!active;if(!active)return;$('visionBtn').hidden=$('eraseBtn').hidden=true;for(const [id,tag,field,name] of [['scrOwn','own','swapOwn','Allied Soul Exchange'],['scrEnemy','enemy','swapEnemy','Enemy Soul Exchange']]){const b=$(id),cd=s.stand[field][idx];b.textContent=name+' · '+(cd||tr('Ready'));b.disabled=!ctl||!!cd||!legal.some(m=>m.swap===tag);b.setAttribute('aria-pressed',String(scrMode===tag));b.title='Swap movement types for four rounds; if one is lost, the survivor keeps its movement permanently · Initial cooldown: 6 turns · Subsequent cooldown: '+(tag==='own'?10:12)+' turns · Free action';}$('powerNote').textContent=scrMode?(scrAnchor===null?'Choose the first piece.':'Choose the second piece.'):(s.stand.handFree&&idx===+!s.w?tr('Ability used. Make your move.'):'Silver Chariot Requiem · Soul Exchange (4 rounds)');}
 for(const [id,tag] of [['scrOwn','own'],['scrEnemy','enemy']])$(id).onclick=()=>{if($(id).disabled)return;clearHint();selection=null;scrMode=scrMode===tag?'':tag;scrAnchor=null;draw()};
 function scrPick(i){const candidates=legal.filter(m=>m.swap===scrMode);if(scrAnchor===i){scrAnchor=null;draw();return}if(scrAnchor!==null){const m=candidates.find(m=>(m.a===scrAnchor&&m.z===i)||(m.z===scrAnchor&&m.a===i));if(m){scrMode='';scrAnchor=null;cdMode='';cdLost=null;submit(m);return}}if(candidates.some(m=>m.a===i||m.z===i)){scrAnchor=i;draw()}}
 function scrViewer(){return mode==='net'?+!room?.w:mode==='bot'?0:mode==='duel'?(duelPlayer===null?-1:+!duelPlayer):+!s.w;}
@@ -1300,7 +1296,7 @@ const starAudio={stop:new Audio('https://www.myinstants.com/media/sounds/star-pl
 function starVoice(kind){try{const a=starAudio[kind];if(!a)return;for(const other of Object.values(starAudio)){if(other!==a){other.pause();other.currentTime=0;}}a.currentTime=0;a.play().catch(()=>{});}catch{}}
 function timeStopEffect(){const fx=$('starTimeFx'),banner=$('timeStopBanner');fx.classList.remove('burst','resume');banner.classList.remove('show');void fx.offsetWidth;fx.classList.add('burst');banner.classList.add('show');starVoice('stop');}
 function timeResumeEffect(){const fx=$('starTimeFx'),banner=$('timeStopBanner');fx.classList.remove('burst','resume');banner.classList.remove('show');void fx.offsetWidth;fx.classList.add('resume');starVoice('resume');}
-function starHUD(idx,ctl){const active=s.stand.type[idx]==='star';$('starFinger').hidden=$('starStop').hidden=!active;if(!active)return;$('visionBtn').hidden=$('eraseBtn').hidden=true;const stopped=s.stand.stopped===idx;const fingerCD=s.stand.finger[idx],stopCD=s.stand.stop[idx];$('starFinger').textContent='Star Finger · '+(fingerCD||tr('Ready'));$('starStop').textContent='Time Stop · '+(stopped?s.stand.stopMoves[idx]+'/4':stopCD||tr('Ready'));$('starFinger').disabled=!ctl||stopped||!!fingerCD||!legal.some(m=>m.finger);$('starStop').disabled=!ctl||stopped||!!stopCD||!legal.some(m=>m.stop);$('starFinger').setAttribute('aria-pressed',String(starMode==='finger'));$('starStop').setAttribute('aria-pressed','false');$('starFinger').title='Star Finger · 6 turns · Move action';$('starStop').title='Time Stop · Initial cooldown: 8 turns · Subsequent cooldown: 14 turns · Free action';$('powerNote').textContent=fxLabel||(stopped?('Time Stop · Captures '+s.stand.stopCaptured[idx]+'/1 · '+tr('Choose a legal move during Time Stop.')):starMode==='finger'?tr('Choose an enemy piece within two squares of your king.'):s.stand.handFree==='stop'&&idx===+!s.w?tr('Time Stop: move up to 4 times. Each piece can move only once, and capture at most one piece.'):tr('Star Platinum: choose a power.'));}
+function starHUD(idx,ctl){const active=s.stand.type[idx]==='star';$('starFinger').hidden=$('starStop').hidden=!active;if(!active)return;$('visionBtn').hidden=$('eraseBtn').hidden=true;const stopped=s.stand.stopped===idx;const fingerCD=s.stand.finger[idx],stopCD=s.stand.stop[idx];$('starFinger').textContent='Star Finger · '+(fingerCD||tr('Ready'));$('starStop').textContent='Time Stop · '+(stopped?s.stand.stopMoves[idx]+'/4':stopCD||tr('Ready'));$('starFinger').disabled=!ctl||stopped||!!fingerCD||!legal.some(m=>m.finger);$('starStop').disabled=!ctl||stopped||!!stopCD||!legal.some(m=>m.stop);$('starFinger').setAttribute('aria-pressed',String(starMode==='finger'));$('starStop').setAttribute('aria-pressed','false');$('starFinger').title='Star Finger · 6 turns · Move action';$('starStop').title='Time Stop · Initial cooldown: 8 turns · Subsequent cooldown: 13 turns · Free action';$('powerNote').textContent=fxLabel||(stopped?('Time Stop · Captures '+s.stand.stopCaptured[idx]+'/1 · '+tr('Choose a legal move during Time Stop.')):starMode==='finger'?tr('Choose an enemy piece within two squares of your king.'):s.stand.handFree==='stop'&&idx===+!s.w?tr('Time Stop: move up to 4 times. Each piece can move only once, and capture at most one piece.'):tr('Star Platinum: choose a power.'));}
 $('starFinger').onclick=()=>{if($('starFinger').disabled)return;clearHint();selection=null;starMode=starMode==='finger'?'':'finger';draw()};
 $('starStop').onclick=()=>{if($('starStop').disabled)return;clearHint();selection=null;starMode='';submit(legal.find(m=>m.stop))};
 function starPick(i){const m=legal.find(m=>m.finger&&m.z===i);if(m){starMode='';submit(m);}}
@@ -1311,7 +1307,7 @@ function echoVoice(kind){try{const a=echoAudio[kind];a.currentTime=0;a.play().ca
 function echoHUD(idx,ctl){
  const active=s.stand.type[idx]==='echoes';$('echoFreeze').hidden=$('echoSound').hidden=!active;$('echoTrapOptions').hidden=!active||!ctl||echoMode!=='trap'||echoCell===null;if(!active)return;
  $('visionBtn').hidden=$('eraseBtn').hidden=true;
- for(const [id,field,tag,label] of [['echoFreeze','freezeCD','freeze','Three Freeze'],['echoSound','soundCD','trap','Sound Manifestation']]){const b=$(id),cd=s.stand[field][idx];b.textContent=label+' · '+(cd||tr('Ready'));b.disabled=!ctl||!!cd||!legal.some(m=>tag==='freeze'?m.echo==='freeze':['whoosh','burn'].includes(m.echo));b.setAttribute('aria-pressed',String(echoMode===tag));b.title=label+' · '+(tag==='freeze'?9:8)+' turns · Free action';}
+ for(const [id,field,tag,label] of [['echoFreeze','freezeCD','freeze','Three Freeze'],['echoSound','soundCD','trap','Sound Manifestation']]){const b=$(id),cd=s.stand[field][idx];b.textContent=label+' · '+(cd||tr('Ready'));b.disabled=!ctl||!!cd||!legal.some(m=>tag==='freeze'?m.echo==='freeze':['whoosh','burn'].includes(m.echo));b.setAttribute('aria-pressed',String(echoMode===tag));b.title=label+' · '+(tag==='freeze'?7:6)+' turns · Free action';}
  for(const [id,kind] of [['echoWhoosh','whoosh'],['echoBurn','burn']])$(id).disabled=!ctl||!legal.some(m=>m.echo===kind&&m.a===echoCell);
  for(const [id,kind,label] of [['echoWhoosh','whoosh','Whoosh'],['echoBurn','burn','Sizzle']])$(id).textContent=label+' · '+Object.values(s.stand.traps).filter(t=>t.owner===idx&&t.kind===kind).length+'/2';
  $('powerNote').textContent=fxLabel|| (echoMode==='freeze'?tr('Choose an enemy piece to freeze.'):echoMode==='trap'?tr(echoCell===null?'Choose an empty square within two squares of your king.':'Choose a trap.'):s.stand.handFree&&idx===+!s.w?tr('Ability used. Make your move.'):tr('Echoes: one free ability per turn.'));
@@ -1329,7 +1325,7 @@ async function animateEcho(before,m,next,token){
 function handHUD(idx,ctl){
  const own=s.stand.type[idx]==='hand';$('handPull').hidden=$('handDelete').hidden=!own;if(!own)return;
  $('visionBtn').hidden=$('eraseBtn').hidden=true;
- for(const [id,tag,field,label] of [['handPull','pull','closure','Instant Closure'],['handDelete','delete','deletion','Complete Deletion']]){const btn=$(id),cd=s.stand[field][idx];btn.textContent=label+' · '+(cd||tr('Ready'));btn.title=tag==='delete'?'Complete Deletion · 9 turns · Free action':'Instant Closure · 8 turns · Free action';btn.disabled=!ctl||!!cd||!legal.some(m=>m.hand===tag);btn.setAttribute('aria-pressed',String(handMode===tag));}
+ for(const [id,tag,field,label] of [['handPull','pull','closure','Instant Closure'],['handDelete','delete','deletion','Complete Deletion']]){const btn=$(id),cd=s.stand[field][idx];btn.textContent=label+' · '+(cd||tr('Ready'));btn.title=tag==='delete'?'Complete Deletion · 8 turns · Free action':'Instant Closure · 7 turns · Free action';btn.disabled=!ctl||!!cd||!legal.some(m=>m.hand===tag);btn.setAttribute('aria-pressed',String(handMode===tag));}
  $('powerNote').textContent=fxLabel||(handMode==='pull'?tr(handAnchor===null?'Choose your anchor piece.':'Choose an enemy piece to pull.'):handMode==='delete'?tr('Choose a piece beside your king.'):tr(s.stand.handFree&&idx===+!s.w?'Ability used. Make your move.':'The Hand: both powers are free; one per turn.'));
 }
 for(const [id,tag] of [['handPull','pull'],['handDelete','delete']])$(id).onclick=()=>{if($(id).disabled)return;clearHint();selection=null;handMode=handMode===tag?'':tag;handAnchor=null;draw()};
@@ -1465,7 +1461,7 @@ function seats(){
  const content='<div class="sidehead"><i class="chip '+id+'"></i>'+side+'</div><div class="owner">'+owner+(s.stand?' · '+(isKira(s,+!w)?'Killer Queen · BTD '+(s.stand.dust[+!w]||tr('Ready')):s.stand.type[+!w]==='d4c'?'D4C · Love Train '+(s.stand.love[+!w]||tr('Ready')):s.stand.type[+!w]==='cmoon'?'C-Moon':s.stand.type[+!w]==='hand'?'The Hand':s.stand.type[+!w]==='echoes'?'Echoes':s.stand.type[+!w]==='sticky'?'Sticky Fingers':s.stand.type[+!w]==='diamond'?'Crazy Diamond':s.stand.type[+!w]==='requiem'?'Silver Chariot Requiem':s.stand.type[+!w]==='star'?'Star Platinum':s.stand.type[+!w]==='moody'?'Moody Blues':'King Crimson'):'')+'</div><div class="clock" aria-label="'+tr(timed?'Time remaining':'Unlimited time')+'">'+time+'</div><div class="metrics"><span class="caption">'+tr('Captured')+'</span><span class="captures">'+(captured||'—')+'</span><span class="adv">'+(bal===0?tr('Material even'):(bal>0?'+':'')+bal+' '+tr('material'))+'</span></div>';
  if(card.dataset.content!==content){card.innerHTML=content;card.dataset.content=content}
  }
- const status=fxLabel||tr(ending)||(!live?tr('Waiting for opponent…'):tr('Move')+' '+(1+Math.floor((entries.filter(e=>!freeAction(e.m)||e.m.swap).length+(opening.w?0:1))/2))+' · '+tr(s.w?'White to move':'Black to move')+(check(s)?' · '+tr('Check'):'')+(busy?' · '+tr('Thinking…'):''));
+ const status=fxLabel||tr(ending)||(!live?tr('Waiting for opponent…'):tr('Move')+' '+(1+Math.floor((entries.filter((e,i)=>e.before.w!==(entries[i+1]?.before||s).w).length+(opening.w?0:1))/2))+' · '+tr(s.w?'White to move':'Black to move')+(check(s)?' · '+tr('Check'):'')+(busy?' · '+tr('Thinking…'):''));
  if($('state').textContent!==status)$('state').textContent=status;$('state').classList.toggle('thinking',busy&&!ending);showResult();standHUD()
 }
 function timeoutResult(s){const opponent=s.b.concat(zipMaterial(s)).filter(p=>p!=='.'&&white(p)!==s.w&&p.toLowerCase()!=='k');return opponent.length?(s.w?'Black':'White')+' wins on time':'Draw · time expired'}
